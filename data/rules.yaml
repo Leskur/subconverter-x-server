@@ -1,0 +1,9 @@
+rules-merge: prepend
+proxy-groups-merge: replace
+rules:
+  - GEOIP,CN,DIRECT
+  - MATCH,PROXY
+proxy-groups:
+  - name: PROXY
+    type: select
+    proxies: []

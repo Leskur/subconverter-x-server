@@ -1,0 +1,8 @@
+{
+  "main": "dist/standalone.cjs",
+  "mainFormat": "commonjs",
+  "output": "dist/subconverter-x",
+  "disableExperimentalSEAWarning": true,
+  "useCodeCache": false,
+  "useSnapshot": false
+}
