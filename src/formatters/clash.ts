@@ -127,7 +127,11 @@ export function formatClashProxies(nodes: ProxyNode[], extras?: ClashExtras): st
           },
         ]
 
-  const output: Record<string, unknown> = { proxies, 'proxy-groups': groups }
+  const output: Record<string, unknown> = {
+    ...(extras?.topLevel ?? {}),
+    proxies,
+    'proxy-groups': groups,
+  }
   if (extras?.rules && extras.rules.length > 0) {
     output.rules = extras.rules
   }

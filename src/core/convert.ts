@@ -39,7 +39,7 @@ export async function convertSubscription(
     ...options,
     requestHeaders: input.requestHeaders,
   })
-  let { format, nodes, proxyGroups, rules } = parseSubscription(body)
+  let { format, nodes, proxyGroups, rules, topLevel } = parseSubscription(body)
   logRequest('parsed', { format, nodes: nodes.length })
 
   const fallbackUa = options.fallbackUserAgent ?? DEFAULT_FALLBACK_USER_AGENT
@@ -61,6 +61,7 @@ export async function convertSubscription(
       nodes = retry.nodes
       proxyGroups = retry.proxyGroups
       rules = retry.rules
+      topLevel = retry.topLevel
     }
   }
 
@@ -73,7 +74,7 @@ export async function convertSubscription(
   let clashExtras
   if (client === 'clash' || client === 'surge') {
     const rulesConfig = await rulesStore.get()
-    clashExtras = resolveClashExtras(nodes, rulesConfig, { proxyGroups, rules })
+    clashExtras = resolveClashExtras(rulesConfig, { proxyGroups, rules, topLevel })
   }
 
   const formatted = formatProxies(nodes, client, clashExtras)

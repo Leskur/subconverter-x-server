@@ -148,23 +148,26 @@ function mapClashProxy(raw: ClashProxy): ProxyNode | null {
   }
 }
 
+const CLASH_STRUCTURAL_KEYS = new Set(['proxies', 'proxy-groups', 'rules'])
+
 export function parseClashConfig(raw: string): {
   nodes: ProxyNode[]
   proxyGroups: unknown[]
   rules: string[]
+  topLevel: Record<string, unknown>
 } {
   let doc: unknown
   try {
     doc = parseYaml(raw)
   } catch {
-    return { nodes: [], proxyGroups: [], rules: [] }
+    return { nodes: [], proxyGroups: [], rules: [], topLevel: {} }
   }
 
-  if (!doc || typeof doc !== 'object') return { nodes: [], proxyGroups: [], rules: [] }
+  if (!doc || typeof doc !== 'object') return { nodes: [], proxyGroups: [], rules: [], topLevel: {} }
 
-  const record = doc as { proxies?: unknown; 'proxy-groups'?: unknown; rules?: unknown }
+  const record = doc as Record<string, unknown>
   const proxies = record.proxies
-  if (!Array.isArray(proxies)) return { nodes: [], proxyGroups: [], rules: [] }
+  if (!Array.isArray(proxies)) return { nodes: [], proxyGroups: [], rules: [], topLevel: {} }
 
   const nodes: ProxyNode[] = []
   for (const item of proxies) {
@@ -179,5 +182,10 @@ export function parseClashConfig(raw: string): {
     ? record.rules.map((rule) => String(rule).trim()).filter(Boolean)
     : []
 
-  return { nodes, proxyGroups, rules }
+  const topLevel: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(record)) {
+    if (!CLASH_STRUCTURAL_KEYS.has(key)) topLevel[key] = value
+  }
+
+  return { nodes, proxyGroups, rules, topLevel }
 }

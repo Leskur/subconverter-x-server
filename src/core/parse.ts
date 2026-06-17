@@ -50,6 +50,7 @@ export interface ParseSubscriptionResult {
   nodes: ProxyNode[]
   proxyGroups?: unknown[]
   rules?: string[]
+  topLevel?: Record<string, unknown>
 }
 
 export function parseSubscription(raw: string): ParseSubscriptionResult {
@@ -62,6 +63,7 @@ export function parseSubscription(raw: string): ParseSubscriptionResult {
       nodes: clash.nodes,
       proxyGroups: clash.proxyGroups,
       rules: clash.rules,
+      topLevel: clash.topLevel,
     }
   }
 
