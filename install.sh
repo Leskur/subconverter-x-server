@@ -6,7 +6,7 @@ BIN="$HOME/.local/bin/subconverter-x"
 RULES="$HOME/.config/$SERVICE/rules.yaml"
 UNIT="$HOME/.config/systemd/user/$SERVICE.service"
 
-[[ -f "dist/subconverter-x" ]] || { echo "❌ 请先运行 npm run build"; exit 1; }
+[ -f "dist/subconverter-x" ] || { echo "❌ 请先运行 npm run build"; exit 1; }
 
 # 停止旧服务
 systemctl --user stop "$SERVICE" 2>/dev/null || true
@@ -18,7 +18,7 @@ chmod +x "$BIN"
 
 # 复制默认规则（首次）
 mkdir -p "$(dirname "$RULES")"
-[[ ! -f "$RULES" ]] && cp data/rules.yaml "$RULES"
+[ ! -f "$RULES" ] && cp data/rules.yaml "$RULES"
 
 # 注册服务
 mkdir -p "$(dirname "$UNIT")"
