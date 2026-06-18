@@ -44,10 +44,6 @@ function isBrowserUserAgent(userAgent: string | undefined): boolean {
   return !!userAgent && /mozilla\//i.test(userAgent)
 }
 
-function resolveIngestUserAgent(forceClient: string | undefined): string | undefined {
-  if (!forceClient) return undefined
-  return CLIENT_UA[forceClient]
-}
 
 export async function fetchRawSubscription(
   input: Pick<ConvertInput, 'upstreamUrl' | 'requestHeaders'>,
@@ -64,12 +60,10 @@ export async function convertSubscription(
   options: ConvertOptions = {},
 ): Promise<ConvertResult> {
   const userAgent = input.requestHeaders?.get('user-agent') ?? undefined
-  const ingestUa = resolveIngestUserAgent(input.forceClient)
 
   const body = await ingestSubscription(input.upstreamUrl, {
     ...options,
     requestHeaders: input.requestHeaders,
-    overrideUserAgent: ingestUa,
   })
   let { format, nodes, proxyGroups, rules, topLevel, raw } = parseSubscription(body)
   logRequest('parsed', { format, nodes: nodes.length })
@@ -83,19 +77,34 @@ export async function convertSubscription(
     }
   }
 
+  const needsClientRetry =
+    nodes.length === 0 && input.forceClient && CLIENT_UA[input.forceClient]
   const fallbackUa = options.fallbackUserAgent ?? DEFAULT_FALLBACK_USER_AGENT
-  const shouldRetry =
+  const needsFallbackRetry =
     nodes.length === 0 &&
+    !needsClientRetry &&
     !isBrowserUserAgent(userAgent) &&
     fallbackUa.toLowerCase() !== userAgent?.toLowerCase()
-  if (shouldRetry) {
+
+  const retryUa = needsClientRetry ? CLIENT_UA[input.forceClient!] : needsFallbackRetry ? fallbackUa : null
+
+  if (retryUa) {
     const retryBody = await ingestSubscription(input.upstreamUrl, {
       ...options,
       requestHeaders: input.requestHeaders,
-      overrideUserAgent: fallbackUa,
+      overrideUserAgent: retryUa,
     })
     const retry = parseSubscription(retryBody)
-    logRequest('parsed', { retryUa: fallbackUa, format: retry.format, nodes: retry.nodes.length })
+    logRequest('parsed', { retryUa, format: retry.format, nodes: retry.nodes.length })
+
+    if (retry.format === 'singbox' && retry.raw) {
+      return {
+        body: retry.raw,
+        contentType: 'application/json; charset=utf-8',
+        client: 'singbox',
+        nodeCount: 0,
+      }
+    }
 
     if (retry.nodes.length > 0) {
       format = retry.format
