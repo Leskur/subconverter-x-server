@@ -11,18 +11,25 @@ import { logRequest } from '../utils/log.js'
 
 const CLASH_SKIP_KEYS = new Set(['proxies', 'proxy-groups', 'rules'])
 
-async function loadClashTemplateTopLevel(): Promise<Record<string, unknown>> {
+interface ClashTemplateExtras {
+  topLevel: Record<string, unknown>
+  proxyGroups: unknown[]
+}
+
+async function loadClashTemplate(): Promise<ClashTemplateExtras> {
   try {
     const raw = await templateStore.get('clash')
     const doc = parseYaml(raw)
-    if (!doc || typeof doc !== 'object') return {}
-    const result: Record<string, unknown> = {}
-    for (const [key, value] of Object.entries(doc as Record<string, unknown>)) {
-      if (!CLASH_SKIP_KEYS.has(key)) result[key] = value
+    if (!doc || typeof doc !== 'object') return { topLevel: {}, proxyGroups: [] }
+    const record = doc as Record<string, unknown>
+    const topLevel: Record<string, unknown> = {}
+    for (const [key, value] of Object.entries(record)) {
+      if (!CLASH_SKIP_KEYS.has(key)) topLevel[key] = value
     }
-    return result
+    const proxyGroups = Array.isArray(record['proxy-groups']) ? record['proxy-groups'] : []
+    return { topLevel, proxyGroups }
   } catch {
-    return {}
+    return { topLevel: {}, proxyGroups: [] }
   }
 }
 
@@ -125,10 +132,15 @@ export async function convertSubscription(
   if (client === 'clash' || client === 'surge') {
     const rulesConfig = await rulesStore.get()
     let resolvedTopLevel = topLevel
+    let resolvedProxyGroups = proxyGroups
     if (!resolvedTopLevel || Object.keys(resolvedTopLevel).length === 0) {
-      resolvedTopLevel = await loadClashTemplateTopLevel()
+      const tmpl = await loadClashTemplate()
+      resolvedTopLevel = tmpl.topLevel
+      if (!resolvedProxyGroups || resolvedProxyGroups.length === 0) {
+        resolvedProxyGroups = tmpl.proxyGroups
+      }
     }
-    clashExtras = resolveClashExtras(rulesConfig, { proxyGroups, rules, topLevel: resolvedTopLevel })
+    clashExtras = resolveClashExtras(rulesConfig, { proxyGroups: resolvedProxyGroups, rules, topLevel: resolvedTopLevel })
   }
 
   const formatted = formatProxies(nodes, client, clashExtras)
