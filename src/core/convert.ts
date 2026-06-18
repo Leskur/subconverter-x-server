@@ -1,3 +1,4 @@
+import { parse as parseYaml } from 'yaml'
 import type { ConvertInput, ConvertResult } from '../types/proxy.js'
 import { formatProxies } from './format.js'
 import { ingestSubscription, type IngestOptions } from './ingest.js'
@@ -5,7 +6,25 @@ import { parseProxyLines, parseSubscription } from './parse.js'
 import { resolveClient } from './route.js'
 import { resolveClashExtras } from '../profiles/merge.js'
 import { rulesStore } from '../profiles/store.js'
+import { templateStore } from '../profiles/templates.js'
 import { logRequest } from '../utils/log.js'
+
+const CLASH_SKIP_KEYS = new Set(['proxies', 'proxy-groups', 'rules'])
+
+async function loadClashTemplateTopLevel(): Promise<Record<string, unknown>> {
+  try {
+    const raw = await templateStore.get('clash')
+    const doc = parseYaml(raw)
+    if (!doc || typeof doc !== 'object') return {}
+    const result: Record<string, unknown> = {}
+    for (const [key, value] of Object.entries(doc as Record<string, unknown>)) {
+      if (!CLASH_SKIP_KEYS.has(key)) result[key] = value
+    }
+    return result
+  } catch {
+    return {}
+  }
+}
 
 export interface ConvertOptions extends IngestOptions {
   defaultClient?: ConvertInput['forceClient']
@@ -96,7 +115,11 @@ export async function convertSubscription(
   let clashExtras
   if (client === 'clash' || client === 'surge') {
     const rulesConfig = await rulesStore.get()
-    clashExtras = resolveClashExtras(rulesConfig, { proxyGroups, rules, topLevel })
+    let resolvedTopLevel = topLevel
+    if (!resolvedTopLevel || Object.keys(resolvedTopLevel).length === 0) {
+      resolvedTopLevel = await loadClashTemplateTopLevel()
+    }
+    clashExtras = resolveClashExtras(rulesConfig, { proxyGroups, rules, topLevel: resolvedTopLevel })
   }
 
   const formatted = formatProxies(nodes, client, clashExtras)

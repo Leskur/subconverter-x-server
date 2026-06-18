@@ -2,7 +2,7 @@ import { convertSubscription, fetchRawSubscription } from '../core/convert.js'
 
 import { resolveClientOrNull } from '../core/route.js'
 
-import { corsHeadersForHandler, handleAdminMeta, handleRulesApi } from './profile-api.js'
+import { corsHeadersForHandler, handleAdminMeta, handleRulesApi, handleTemplatesApi } from './profile-api.js'
 
 import { logRequest } from '../utils/log.js'
 
@@ -269,6 +269,14 @@ export async function handleRequest(request: Request): Promise<Response> {
 
   if (url.pathname === '/api/rules') {
     return handleRulesApi(request)
+  }
+
+  if (url.pathname === '/api/templates/clash') {
+    return handleTemplatesApi(request, 'clash')
+  }
+
+  if (url.pathname === '/api/templates/singbox') {
+    return handleTemplatesApi(request, 'singbox')
   }
 
   if (url.pathname.startsWith('/api/profiles')) {

@@ -1,5 +1,6 @@
 import type { RulesInput } from '../profiles/types.js'
 import { rulesStore } from '../profiles/store.js'
+import { templateStore, type TemplateType } from '../profiles/templates.js'
 import { getAppVersion } from '../utils/version.js'
 
 function corsOrigin(): string {
@@ -66,6 +67,28 @@ export async function handleRulesApi(request: Request): Promise<Response> {
 
     const rules = await rulesStore.save(body)
     return jsonResponse(rules)
+  }
+
+  return jsonResponse({ error: 'Method Not Allowed' }, 405)
+}
+
+export async function handleTemplatesApi(request: Request, type: TemplateType): Promise<Response> {
+  if (request.method === 'GET') {
+    const content = await templateStore.get(type)
+    const contentType = type === 'singbox' ? 'application/json; charset=utf-8' : 'text/plain; charset=utf-8'
+    return new Response(content, { status: 200, headers: { ...corsHeaders(), 'Content-Type': contentType } })
+  }
+
+  if (request.method === 'PUT') {
+    if (!isAuthorized(request)) {
+      return jsonResponse({ error: 'Unauthorized' }, 401)
+    }
+    const content = await request.text()
+    if (!content.trim()) {
+      return jsonResponse({ error: 'Empty body' }, 400)
+    }
+    await templateStore.save(type, content)
+    return jsonResponse({ ok: true })
   }
 
   return jsonResponse({ error: 'Method Not Allowed' }, 405)
