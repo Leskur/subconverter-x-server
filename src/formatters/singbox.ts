@@ -204,7 +204,7 @@ function trojanOutbound(node: TrojanProxy): Record<string, unknown> {
 }
 
 export function formatSingboxOutbounds(nodes: ProxyNode[]): string {
-  const outbounds = nodes.map((node) => {
+  const outbounds = nodes.filter((n) => n.type !== 'raw').map((node) => {
     switch (node.type) {
       case 'vless':
         return vlessOutbound(node)

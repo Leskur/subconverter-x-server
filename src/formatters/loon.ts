@@ -6,6 +6,7 @@ import type {
   VlessProxy,
   VmessProxy,
 } from '../types/proxy.js'
+import type { ClashExtras } from '../profiles/merge.js'
 
 function ssLine(node: ShadowsocksProxy): string {
   const parts = [`${node.name} = Shadowsocks,${node.server},${node.port},${node.method},"${node.password}"`]
@@ -69,12 +70,17 @@ function proxyLine(node: ProxyNode): string {
     case 'vless': return vlessLine(node)
     case 'trojan': return trojanLine(node)
     case 'hysteria2': return hysteria2Line(node)
+    default: return ''
   }
 }
 
-export function formatLoonProxies(nodes: ProxyNode[]): string {
-  const lines = nodes.map(proxyLine)
-  const names = nodes.map((n) => n.name)
+export function formatLoonProxies(nodes: ProxyNode[], extras?: ClashExtras): string {
+  const usable = nodes.filter((n) => n.type !== 'raw')
+  const lines = usable.map(proxyLine)
+  const names = usable.map((n) => n.name)
+  const ruleLines = extras?.rules?.length
+    ? extras.rules.map((r) => r.replace(/^MATCH,/, 'FINAL,'))
+    : ['FINAL,PROXY']
   return [
     '[Proxy]',
     ...lines,
@@ -84,6 +90,6 @@ export function formatLoonProxies(nodes: ProxyNode[]): string {
     `AUTO = url-test,${names.join(',')},url=http://cp.cloudflare.com/generate_204,interval=300`,
     '',
     '[Rule]',
-    'FINAL,PROXY',
+    ...ruleLines,
   ].join('\n')
 }

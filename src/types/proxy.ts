@@ -1,4 +1,4 @@
-export type ProxyType = 'vless' | 'shadowsocks' | 'trojan' | 'vmess' | 'hysteria2'
+export type ProxyType = 'vless' | 'shadowsocks' | 'trojan' | 'vmess' | 'hysteria2' | 'raw'
 
 export type ClientType = 'singbox' | 'clash' | 'surge' | 'surfboard' | 'loon' | 'quanx'
 
@@ -71,7 +71,12 @@ export interface Hysteria2Proxy extends BaseProxy {
   pinSHA256?: string
 }
 
-export type ProxyNode = VlessProxy | ShadowsocksProxy | TrojanProxy | VmessProxy | Hysteria2Proxy
+export interface RawProxy extends BaseProxy {
+  type: 'raw'
+  raw: Record<string, unknown>
+}
+
+export type ProxyNode = VlessProxy | ShadowsocksProxy | TrojanProxy | VmessProxy | Hysteria2Proxy | RawProxy
 
 export interface ConvertInput {
   upstreamUrl: string
@@ -88,4 +93,5 @@ export interface ConvertResult {
   format?: string
   proxyGroupsSource?: 'upstream' | 'template'
   proxyGroupCount?: number
+  ruleCount?: number
 }

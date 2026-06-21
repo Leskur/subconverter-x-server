@@ -68,9 +68,11 @@ export async function convertSubscription(
 ): Promise<ConvertResult> {
   const userAgent = input.requestHeaders?.get('user-agent') ?? undefined
 
+  const overrideUa = isBrowserUserAgent(userAgent) ? 'clash.meta' : undefined
   const body = await ingestSubscription(input.upstreamUrl, {
     ...options,
     requestHeaders: input.requestHeaders,
+    overrideUserAgent: overrideUa,
   })
   let { format, nodes, proxyGroups, rules, topLevel, raw } = parseSubscription(body)
 
@@ -128,7 +130,7 @@ export async function convertSubscription(
 
   let clashExtras
   let proxyGroupsSource: 'upstream' | 'template' | undefined
-  if (client === 'clash' || client === 'surge' || client === 'surfboard') {
+  if (client !== 'singbox') {
     const rulesConfig = await rulesStore.get()
     let resolvedTopLevel = topLevel
     let resolvedProxyGroups = proxyGroups
@@ -152,6 +154,7 @@ export async function convertSubscription(
 
   const formatted = formatProxies(nodes, client, clashExtras, input.managedConfigUrl)
   const proxyGroupCount = clashExtras?.proxyGroups?.length
+  const ruleCount = clashExtras?.rules?.length
 
   return {
     ...formatted,
@@ -160,6 +163,7 @@ export async function convertSubscription(
     format,
     proxyGroupsSource,
     proxyGroupCount,
+    ruleCount,
   }
 }
 

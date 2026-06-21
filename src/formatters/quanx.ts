@@ -6,6 +6,7 @@ import type {
   VlessProxy,
   VmessProxy,
 } from '../types/proxy.js'
+import type { ClashExtras } from '../profiles/merge.js'
 
 function ssLine(node: ShadowsocksProxy): string {
   return `shadowsocks=${node.server}:${node.port}, method=${node.method}, password=${node.password}, udp-relay=true, tag=${node.name}`
@@ -77,12 +78,41 @@ function proxyLine(node: ProxyNode): string {
     case 'vless': return vlessLine(node)
     case 'trojan': return trojanLine(node)
     case 'hysteria2': return hysteria2Line(node)
+    default: return ''
   }
 }
 
-export function formatQuanxProxies(nodes: ProxyNode[]): string {
-  const lines = nodes.map(proxyLine)
-  const tags = nodes.map((n) => n.name)
+const CLASH_TO_QUANX_TYPE: Record<string, string> = {
+  'DOMAIN': 'host',
+  'DOMAIN-SUFFIX': 'host-suffix',
+  'DOMAIN-KEYWORD': 'host-keyword',
+  'IP-CIDR': 'ip-cidr',
+  'IP-CIDR6': 'ip6-cidr',
+  'GEOIP': 'geoip',
+}
+
+function toQuanxRule(rule: string): string {
+  const parts = rule.split(',')
+  if (parts.length === 2 && parts[0].toUpperCase() === 'MATCH') {
+    return `final, ${parts[1].trim()}`
+  }
+  if (parts.length >= 3) {
+    const type = parts[0].trim().toUpperCase()
+    const value = parts[1].trim()
+    const policy = parts[2].trim()
+    const quanxType = CLASH_TO_QUANX_TYPE[type]
+    if (quanxType) return `${quanxType}, ${value}, ${policy}`
+  }
+  return rule
+}
+
+export function formatQuanxProxies(nodes: ProxyNode[], extras?: ClashExtras): string {
+  const usable = nodes.filter((n) => n.type !== 'raw')
+  const lines = usable.map(proxyLine)
+  const tags = usable.map((n) => n.name)
+  const ruleLines = extras?.rules?.length
+    ? extras.rules.map(toQuanxRule)
+    : ['final, PROXY']
   return [
     '[server_local]',
     ...lines,
@@ -92,6 +122,6 @@ export function formatQuanxProxies(nodes: ProxyNode[]): string {
     `url-latency-benchmark=AUTO, server-tag-regex=.*, check-interval=600, tolerance=0, img-url=https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Auto.png`,
     '',
     '[filter_local]',
-    'final, PROXY',
+    ...ruleLines,
   ].join('\n')
 }

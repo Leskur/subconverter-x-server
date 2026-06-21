@@ -22,17 +22,17 @@ export function formatProxies(
       }
     case 'surfboard':
       return {
-        body: formatSurfboardProxies(nodes, managedConfigUrl),
+        body: formatSurfboardProxies(nodes, managedConfigUrl, clashExtras),
         contentType: 'text/plain; charset=utf-8',
       }
     case 'loon':
       return {
-        body: formatLoonProxies(nodes),
+        body: formatLoonProxies(nodes, clashExtras),
         contentType: 'text/plain; charset=utf-8',
       }
     case 'quanx':
       return {
-        body: formatQuanxProxies(nodes),
+        body: formatQuanxProxies(nodes, clashExtras),
         contentType: 'text/plain; charset=utf-8',
       }
     case 'singbox':

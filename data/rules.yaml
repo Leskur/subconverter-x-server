@@ -1,2 +1,15 @@
-rules-merge: append
-rules: []
+rules-merge: prepend
+rules:
+  - DOMAIN-SUFFIX,adobe.io,REJECT
+  - DOMAIN-SUFFIX,adobestats.io,REJECT
+  - DOMAIN-SUFFIX,www.bing.com,PROXY
+  - DOMAIN-SUFFIX,linkedin.com,PROXY
+  - DOMAIN-SUFFIX,whastapp.net,PROXY
+  - DOMAIN-KEYWORD,google,PROXY
+  - DOMAIN-SUFFIX,jd.com,DIRECT
+  - DOMAIN-KEYWORD,china,DIRECT
+  - DOMAIN-SUFFIX,dingtalk.com,DIRECT
+  - DOMAIN-SUFFIX,ddns.leskur.cn,DIRECT
+  - DOMAIN-SUFFIX,needvpn.work,DIRECT
+  - GEOIP,CN,DIRECT
+  - MATCH,PROXY

@@ -132,6 +132,8 @@ export function formatClashProxies(nodes: ProxyNode[], extras?: ClashExtras): st
         return vmessProxy(node)
       case 'hysteria2':
         return hysteria2Proxy(node)
+      case 'raw':
+        return (node as import('../types/proxy.js').RawProxy).raw
     }
   })
 
@@ -147,10 +149,23 @@ export function formatClashProxies(nodes: ProxyNode[], extras?: ClashExtras): st
     return g
   }
 
-  const groups =
-    extras?.proxyGroups && extras.proxyGroups.length > 0
-      ? extras.proxyGroups.map(fillProxies)
-      : [{ name: 'PROXY', type: 'select', proxies: nodeNames }]
+  const upstreamGroups = extras?.proxyGroups ?? []
+  const upstreamNames = new Set(
+    upstreamGroups
+      .filter((g): g is Record<string, unknown> => !!g && typeof g === 'object')
+      .map((g) => g['name'])
+      .filter((n): n is string => typeof n === 'string'),
+  )
+
+  const defaultGroups: unknown[] = []
+  if (!upstreamNames.has('PROXY')) {
+    defaultGroups.push({ name: 'PROXY', type: 'select', proxies: nodeNames })
+  }
+  if (!upstreamNames.has('AUTO')) {
+    defaultGroups.push({ name: 'AUTO', type: 'url-test', url: 'http://cp.cloudflare.com/generate_204', interval: 300, proxies: nodeNames })
+  }
+
+  const groups = [...upstreamGroups.map(fillProxies), ...defaultGroups]
 
   const output: Record<string, unknown> = {
     ...(extras?.topLevel ?? {}),

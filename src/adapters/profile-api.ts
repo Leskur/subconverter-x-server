@@ -1,5 +1,6 @@
 import type { RulesInput } from '../profiles/types.js'
 import { rulesStore } from '../profiles/store.js'
+import { rulesetsStore, type CustomRuleset } from '../profiles/rulesets-store.js'
 import { templateStore, type TemplateType } from '../profiles/templates.js'
 import { getAppVersion } from '../utils/version.js'
 
@@ -96,6 +97,30 @@ export async function handleTemplatesApi(request: Request, type: TemplateType): 
     }
     await templateStore.save(type, content)
     return jsonResponse({ ok: true })
+  }
+
+  return jsonResponse({ error: 'Method Not Allowed' }, 405)
+}
+
+export async function handleRulesetsApi(request: Request): Promise<Response> {
+  if (request.method === 'GET') {
+    const rulesets = await rulesetsStore.getAll()
+    return jsonResponse(rulesets)
+  }
+
+  if (request.method === 'PUT') {
+    if (!isAuthorized(request)) {
+      return jsonResponse({ error: 'Unauthorized' }, 401)
+    }
+    let body: CustomRuleset[]
+    try {
+      body = (await request.json()) as CustomRuleset[]
+      if (!Array.isArray(body)) throw new Error('Expected array')
+    } catch {
+      return jsonResponse({ error: 'Invalid JSON body' }, 400)
+    }
+    const saved = await rulesetsStore.save(body)
+    return jsonResponse(saved)
   }
 
   return jsonResponse({ error: 'Method Not Allowed' }, 405)

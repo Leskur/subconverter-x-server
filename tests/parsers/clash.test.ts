@@ -137,3 +137,84 @@ describe('formatClashProxies', () => {
     expect(yaml).toContain('- Node-A')
   })
 })
+
+describe('hysteria2 parsing', () => {
+  const HY2_YAML = `proxies:
+  - name: Hy2-Node
+    type: hysteria2
+    server: 1.2.3.4
+    port: 443
+    password: hy2pw
+    sni: example.com
+    skip-cert-verify: true
+    obfs: salamander
+    obfs-password: obfspw
+`
+
+  it('parses hysteria2 nodes correctly', () => {
+    const { nodes } = parseClashConfig(HY2_YAML)
+    expect(nodes).toHaveLength(1)
+    expect(nodes[0]).toMatchObject({
+      type: 'hysteria2',
+      name: 'Hy2-Node',
+      server: '1.2.3.4',
+      port: 443,
+      password: 'hy2pw',
+      sni: 'example.com',
+      insecure: true,
+      obfs: 'salamander',
+      obfsPassword: 'obfspw',
+    })
+  })
+
+  it('formats hysteria2 nodes back to clash yaml', () => {
+    const { nodes } = parseClashConfig(HY2_YAML)
+    const yaml = formatClashProxies(nodes)
+    expect(yaml).toContain('type: hysteria2')
+    expect(yaml).toContain('password: hy2pw')
+    expect(yaml).toContain('sni: example.com')
+  })
+
+  it('parses hy2 alias as hysteria2', () => {
+    const HY2_ALIAS = `proxies:
+  - name: Hy2-Alias
+    type: hy2
+    server: 5.6.7.8
+    port: 443
+    password: aliaspw
+`
+    const { nodes } = parseClashConfig(HY2_ALIAS)
+    expect(nodes).toHaveLength(1)
+    expect(nodes[0]).toMatchObject({
+      type: 'hysteria2',
+      name: 'Hy2-Alias',
+      password: 'aliaspw',
+    })
+  })
+})
+
+describe('unknown proxy type passthrough', () => {
+  const UNKNOWN_YAML = `proxies:
+  - name: Future-Node
+    type: some-future-protocol
+    server: 1.2.3.4
+    port: 443
+    custom-field: value
+    nested:
+      key: val
+`
+
+  it('preserves unknown type as raw proxy', () => {
+    const { nodes } = parseClashConfig(UNKNOWN_YAML)
+    expect(nodes).toHaveLength(1)
+    expect(nodes[0].type).toBe('raw')
+    expect(nodes[0].name).toBe('Future-Node')
+  })
+
+  it('outputs raw proxy back to clash yaml as-is', () => {
+    const { nodes } = parseClashConfig(UNKNOWN_YAML)
+    const yaml = formatClashProxies(nodes)
+    expect(yaml).toContain('type: some-future-protocol')
+    expect(yaml).toContain('custom-field: value')
+  })
+})

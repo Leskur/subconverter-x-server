@@ -2,7 +2,7 @@ import { convertSubscription, fetchRawSubscription } from '../core/convert.js'
 
 import { resolveClientOrNull } from '../core/client.js'
 
-import { corsHeadersForHandler, handleAdminMeta, handleRulesApi, handleTemplatesApi, handleTemplatesDefaultApi } from './profile-api.js'
+import { corsHeadersForHandler, handleAdminMeta, handleRulesApi, handleRulesetsApi, handleTemplatesApi, handleTemplatesDefaultApi } from './profile-api.js'
 
 import { logRequest } from '../utils/log.js'
 
@@ -67,7 +67,7 @@ async function handleSub(request: Request, started: number): Promise<Response> {
 
   const client = resolveClientOrNull(userAgent, forceClient)
 
-  logRequest('request', { client: client ?? 'passthrough', target: forceClient, url: upstreamUrl })
+  logRequest('request', { client: client ?? 'passthrough', target: forceClient, ua: userAgent, url: upstreamUrl })
 
   if (!client) {
     try {
@@ -86,7 +86,7 @@ async function handleSub(request: Request, started: number): Promise<Response> {
   try {
     const result = await convertSubscription({ upstreamUrl, requestHeaders: request.headers, forceClient: client, managedConfigUrl: request.url })
     const response = textResponse(result.body, result.contentType, 200)
-    logRequest('response', { status: 200, client: result.client, format: result.format, groups: result.proxyGroupsSource, nodeCount: result.nodeCount, groupCount: result.proxyGroupCount, size: result.body.length, latency: `${Date.now() - started}ms`, url: upstreamUrl, body: result.body })
+    logRequest('response', { status: 200, client: result.client, format: result.format, groups: result.proxyGroupsSource, nodeCount: result.nodeCount, groupCount: result.proxyGroupCount, ruleCount: result.ruleCount, size: result.body.length, latency: `${Date.now() - started}ms`, url: upstreamUrl, body: result.body })
     return response
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Conversion failed'
@@ -143,6 +143,10 @@ export async function handleRequest(request: Request): Promise<Response> {
 
   if (url.pathname === '/api/rules') {
     return handleRulesApi(request)
+  }
+
+  if (url.pathname === '/api/rulesets') {
+    return handleRulesetsApi(request)
   }
 
   if (url.pathname === '/api/templates/clash/default') {

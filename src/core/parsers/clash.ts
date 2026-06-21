@@ -22,6 +22,9 @@ interface ClashProxy {
   'ws-opts'?: { path?: string; headers?: Record<string, string> }
   'grpc-opts'?: { 'grpc-service-name'?: string }
   'reality-opts'?: { 'public-key'?: string; 'short-id'?: string }
+  'skip-cert-verify'?: boolean
+  obfs?: string
+  'obfs-password'?: string
 }
 
 function asString(value: unknown): string | undefined {
@@ -143,8 +146,33 @@ function mapClashProxy(raw: ClashProxy): ProxyNode | null {
       }
     }
 
-    default:
-      return null
+    case 'hysteria2':
+    case 'hy2': {
+      const password = asString(raw.password)
+      if (!password) return null
+      return {
+        type: 'hysteria2',
+        name,
+        server,
+        port,
+        password,
+        sni: asString(raw.sni),
+        insecure: raw['skip-cert-verify'] === true,
+        obfs: asString(raw.obfs),
+        obfsPassword: asString(raw['obfs-password']),
+      }
+    }
+
+    default: {
+      const rawRecord = raw as Record<string, unknown>
+      return {
+        type: 'raw',
+        name: name!,
+        server: server!,
+        port: port!,
+        raw: rawRecord,
+      }
+    }
   }
 }
 
