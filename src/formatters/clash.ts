@@ -123,7 +123,7 @@ export function formatClashProxies(nodes: ProxyNode[], extras?: ClashExtras): st
     const g = group as Record<string, unknown>
     const proxies = g['proxies']
     if (Array.isArray(proxies) && proxies.length === 0) {
-      return { ...g, proxies: nodeNames }
+      return { ...g, proxies: [...nodeNames] }
     }
     return g
   }

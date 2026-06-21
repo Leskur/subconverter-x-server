@@ -26,7 +26,10 @@ await esbuild.build({
   outfile: 'dist/lambda.cjs',
 })
 
-await cp('data', 'dist/data', { recursive: true })
+await cp('data', 'dist/data', { recursive: true }).catch(() => {})
+await mkdir('dist/profiles', { recursive: true })
+await copyFile('src/profiles/template-clash.yaml', 'dist/profiles/template-clash.yaml')
+await copyFile('src/profiles/template-singbox.json', 'dist/profiles/template-singbox.json')
 
 console.log('Build complete: dist/standalone.cjs, dist/lambda.cjs')
 

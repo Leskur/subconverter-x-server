@@ -1,6 +1,5 @@
 import { assertSafeUpstreamUrl, tryDecodeBase64 } from '../utils/uri.js'
 import { buildUpstreamHeaders } from '../utils/headers.js'
-import { logRequest } from '../utils/log.js'
 
 export interface IngestOptions {
   fetchImpl?: typeof fetch
@@ -50,12 +49,5 @@ export async function ingestSubscription(
   rawUrl: string,
   options: IngestOptions = {},
 ): Promise<string> {
-  const body = await fetchUpstream(rawUrl, options)
-
-  logRequest('upstream', {
-    bytes: body.length,
-    body,
-  })
-
-  return body
+  return fetchUpstream(rawUrl, options)
 }

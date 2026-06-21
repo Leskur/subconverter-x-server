@@ -7,7 +7,6 @@ import { resolveClient } from './route.js'
 import { resolveClashExtras } from '../profiles/merge.js'
 import { rulesStore } from '../profiles/store.js'
 import { templateStore } from '../profiles/templates.js'
-import { logRequest } from '../utils/log.js'
 
 const CLASH_SKIP_KEYS = new Set(['proxies', 'proxy-groups', 'rules'])
 
@@ -73,7 +72,6 @@ export async function convertSubscription(
     requestHeaders: input.requestHeaders,
   })
   let { format, nodes, proxyGroups, rules, topLevel, raw } = parseSubscription(body)
-  logRequest('parsed', { format, nodes: nodes.length })
 
   if (format === 'singbox' && raw) {
     return {
@@ -102,7 +100,6 @@ export async function convertSubscription(
       overrideUserAgent: retryUa,
     })
     const retry = parseSubscription(retryBody)
-    logRequest('parsed', { retryUa, format: retry.format, nodes: retry.nodes.length })
 
     if (retry.format === 'singbox' && retry.raw) {
       return {
@@ -129,6 +126,7 @@ export async function convertSubscription(
   const client = resolveClient(userAgent, input.forceClient, options.defaultClient ?? 'singbox')
 
   let clashExtras
+  let proxyGroupsSource: 'upstream' | 'template' | undefined
   if (client === 'clash' || client === 'surge') {
     const rulesConfig = await rulesStore.get()
     let resolvedTopLevel = topLevel
@@ -138,17 +136,26 @@ export async function convertSubscription(
       resolvedTopLevel = tmpl.topLevel
       if (!resolvedProxyGroups || resolvedProxyGroups.length === 0) {
         resolvedProxyGroups = tmpl.proxyGroups
+        proxyGroupsSource = 'template'
+      } else {
+        proxyGroupsSource = 'upstream'
       }
+    } else {
+      proxyGroupsSource = 'upstream'
     }
     clashExtras = resolveClashExtras(rulesConfig, { proxyGroups: resolvedProxyGroups, rules, topLevel: resolvedTopLevel })
   }
 
   const formatted = formatProxies(nodes, client, clashExtras)
+  const proxyGroupCount = clashExtras?.proxyGroups?.length
 
   return {
     ...formatted,
     client,
     nodeCount: nodes.length,
+    format,
+    proxyGroupsSource,
+    proxyGroupCount,
   }
 }
 

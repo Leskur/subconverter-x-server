@@ -74,4 +74,7 @@ export interface ConvertResult {
   contentType: string
   client: ClientType
   nodeCount: number
+  format?: string
+  proxyGroupsSource?: 'upstream' | 'template'
+  proxyGroupCount?: number
 }

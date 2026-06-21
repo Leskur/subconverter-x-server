@@ -1,2 +1,2 @@
-rules-merge: prepend
+rules-merge: append
 rules: []

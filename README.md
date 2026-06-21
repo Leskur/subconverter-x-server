@@ -43,7 +43,13 @@ GET /health
 GET /api/admin/meta
 GET /api/rules
 PUT /api/rules
-GET /sub?url=<upstream>&target=<singbox|clash|surge>
+GET /api/templates/clash
+PUT /api/templates/clash
+GET /api/templates/clash/default
+GET /api/templates/singbox
+PUT /api/templates/singbox
+GET /api/templates/singbox/default
+GET /sub?url=<订阅链接>&target=<singbox|clash|surge>
 ```
 
 ### 参数
@@ -59,6 +65,32 @@ GET /sub?url=<upstream>&target=<singbox|clash|surge>
 项目已拆分为独立仓库：[subconverter-x-web](https://github.com/Leskur/subconverter-x-web)。
 
 部署后访问 Admin 页面管理规则集与代理组。
+
+### 模板管理
+
+当上游订阅为 Base64 或纯 URI 列表（无 proxy-groups）时，后端会自动套用对应客户端的默认模板，补全 `proxy-groups`、DNS、top-level 配置等字段。
+
+- **获取当前模板**：`GET /api/templates/clash`（或 `singbox`）
+- **保存自定义模板**：`PUT /api/templates/clash`，Body 为 YAML 文本（需 `Authorization` 头，若设置了 `ADMIN_TOKEN`）
+- **获取内置默认模板**：`GET /api/templates/clash/default`（只读，不受用户保存影响）
+- **存储路径**（平台相关）：
+  - Windows：`%APPDATA%\subconverter-x\template-clash.yaml`
+  - macOS：`~/Library/Application Support/subconverter-x/template-clash.yaml`
+  - Linux：`~/.config/subconverter-x/template-clash.yaml`（遵循 `XDG_CONFIG_HOME`）
+- 文件不存在时自动回退到代码内置默认模板
+- **默认模板源文件**：`src/profiles/template-clash.yaml` / `src/profiles/template-singbox.json`，打包前可直接编辑修改默认值
+
+#### proxy-groups 自动填充
+
+模板中 `proxy-groups` 的 `proxies` 为空数组 `[]` 时，输出时会自动填充为所有节点名称，无需手动列举节点。
+
+#### Admin 页面 - 模板编辑
+
+Admin 页面「模板」标签提供两个按钮：
+- **还原**：放弃本次编辑，恢复到上次保存的内容
+- **恢复默认**：将编辑器内容替换为代码内置默认模板（不自动保存，确认后点保存生效）
+
+> 计划：后续版本将支持「源码 / 可视化」双模式切换，可视化模式直接编辑端口、DNS、代理组等常用字段，高级用户仍可切到源码模式完整编辑。
 
 ### 规则集管理
 
@@ -127,12 +159,14 @@ GET /sub?url=https%3A%2F%2Fexample.com%2Fsub
 ## 项目结构
 
 ```text
-src/                  # 核心后端
-├── core/             # 业务逻辑（摄入、解析、路由、转换）
-├── formatters/       # Sing-box JSON / Clash YAML 输出
-├── adapters/         # HTTP handler、standalone、lambda
-├── profiles/         # 规则集存储与合并逻辑
-data/rules.yaml       # Clash 规则集（单文件）
+src/                          # 核心后端
+├── core/                     # 业务逻辑（摄入、解析、路由、转换）
+├── formatters/               # Sing-box JSON / Clash YAML 输出
+├── adapters/                 # HTTP handler、standalone、lambda
+├── profiles/                 # 规则集 & 模板存储与合并逻辑
+│   ├── template-clash.yaml   # 内置 Clash 默认模板（可直接编辑）
+│   └── template-singbox.json # 内置 Sing-box 默认模板（可直接编辑）
+data/rules.yaml               # Clash 规则集（单文件）
 ```
 
 ## 部署
@@ -327,7 +361,7 @@ node dist/standalone.cjs serve
 | 变量 | 默认值 | 说明 |
 |------|--------|------|
 | `RULES_FILE` | `data/rules.yaml` | 规则集文件路径，支持绝对路径 |
-| `ADMIN_TOKEN` | 未设置 | 启用后 `PUT /api/rules` 需 Bearer Token |
+| `ADMIN_TOKEN` | 未设置 | 启用后 `PUT /api/rules` / `PUT /api/templates/*` 需 Bearer Token |
 | `CORS_ORIGIN` | `*` | Admin 分离部署时的 CORS 来源，生产环境建议设置具体域名 |
 | `LOG_BODY` | 未设置 | 设为 `1` 打印完整请求/响应 body，调试用 |
 

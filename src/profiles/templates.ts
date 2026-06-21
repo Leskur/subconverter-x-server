@@ -1,99 +1,54 @@
+import { readFileSync } from 'node:fs'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 export type TemplateType = 'clash' | 'singbox'
 
-function templateFilePath(type: TemplateType): string {
-  const dir = process.env.RULES_FILE
-    ? dirname(process.env.RULES_FILE)
-    : join(process.cwd(), 'data')
-  return join(dir, `template-${type}.${type === 'singbox' ? 'json' : 'yaml'}`)
+function appDataDir(): string {
+  const platform = process.platform
+  if (platform === 'win32') {
+    return join(process.env.APPDATA ?? homedir(), 'subconverter-x')
+  }
+  if (platform === 'darwin') {
+    return join(homedir(), 'Library', 'Application Support', 'subconverter-x')
+  }
+  return join(process.env.XDG_CONFIG_HOME ?? join(homedir(), '.config'), 'subconverter-x')
 }
 
-const DEFAULT_CLASH_TEMPLATE = `mixed-port: 7890
-allow-lan: false
-bind-address: '*'
-mode: rule
-log-level: info
-external-controller: 127.0.0.1:9090
-unified-delay: true
-tcp-concurrent: true
-dns:
-  enable: true
-  ipv6: false
-  default-nameserver:
-    - 223.5.5.5
-    - 119.29.29.29
-  enhanced-mode: fake-ip
-  fake-ip-range: 198.18.0.1/16
-  nameserver:
-    - 223.5.5.5
-    - 119.29.29.29
-  fallback:
-    - 1.1.1.1
-    - 8.8.8.8
-proxy-groups:
-  - name: PROXY
-    type: select
-    proxies: []
-  - name: AUTO
-    type: url-test
-    url: http://cp.cloudflare.com/generate_204
-    interval: 300
-    proxies: []
-`
+function templateFilePath(type: TemplateType): string {
+  return join(appDataDir(), `template-${type}.${type === 'singbox' ? 'json' : 'yaml'}`)
+}
 
-const DEFAULT_SINGBOX_TEMPLATE = JSON.stringify(
-  {
-    log: { level: 'info', timestamp: true },
-    dns: {
-      servers: [
-        { tag: 'remote', address: 'tls://1.1.1.1', detour: 'PROXY' },
-        { tag: 'local', address: '223.5.5.5', detour: 'DIRECT' },
-      ],
-      rules: [{ geosite: 'cn', server: 'local' }],
-      final: 'remote',
-    },
-    inbounds: [
-      { type: 'mixed', listen: '127.0.0.1', listen_port: 7890 },
-    ],
-    outbounds: [],
-    route: {
-      rules: [
-        { geosite: 'cn', outbound: 'DIRECT' },
-        { geoip: 'cn', outbound: 'DIRECT' },
-      ],
-      final: 'PROXY',
-      auto_detect_interface: true,
-    },
-    experimental: {
-      cache_file: { enabled: true },
-      clash_api: { external_controller: '127.0.0.1:9090' },
-    },
-  },
-  null,
-  2,
-)
+const _dir = dirname(fileURLToPath(import.meta.url))
+export const DEFAULT_CLASH_TEMPLATE = readFileSync(join(_dir, 'template-clash.yaml'), 'utf8')
+export const DEFAULT_SINGBOX_TEMPLATE = readFileSync(join(_dir, 'template-singbox.json'), 'utf8')
 
 export interface TemplateStore {
   get(type: TemplateType): Promise<string>
+  getDefault(type: TemplateType): string
   save(type: TemplateType, content: string): Promise<void>
 }
 
 export class FileTemplateStore implements TemplateStore {
+  getDefault(type: TemplateType): string {
+    return type === 'singbox' ? DEFAULT_SINGBOX_TEMPLATE : DEFAULT_CLASH_TEMPLATE
+  }
+
   async get(type: TemplateType): Promise<string> {
     const path = templateFilePath(type)
     try {
       return await readFile(path, 'utf8')
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
-      return type === 'singbox' ? DEFAULT_SINGBOX_TEMPLATE : DEFAULT_CLASH_TEMPLATE
+      return this.getDefault(type)
     }
   }
 
   async save(type: TemplateType, content: string): Promise<void> {
     const path = templateFilePath(type)
-    await mkdir(dirname(path), { recursive: true })
+    await mkdir(appDataDir(), { recursive: true })
     await writeFile(path, content, 'utf8')
   }
 }

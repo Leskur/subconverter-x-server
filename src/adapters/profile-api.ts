@@ -72,6 +72,13 @@ export async function handleRulesApi(request: Request): Promise<Response> {
   return jsonResponse({ error: 'Method Not Allowed' }, 405)
 }
 
+export function handleTemplatesDefaultApi(request: Request, type: TemplateType): Response {
+  if (request.method !== 'GET') return jsonResponse({ error: 'Method Not Allowed' }, 405)
+  const content = templateStore.getDefault(type)
+  const contentType = type === 'singbox' ? 'application/json; charset=utf-8' : 'text/plain; charset=utf-8'
+  return new Response(content, { status: 200, headers: { ...corsHeaders(), 'Content-Type': contentType } })
+}
+
 export async function handleTemplatesApi(request: Request, type: TemplateType): Promise<Response> {
   if (request.method === 'GET') {
     const content = await templateStore.get(type)
