@@ -1,4 +1,4 @@
-import { assertSafeUpstreamUrl, tryDecodeBase64 } from '../utils/uri.js'
+import { assertSafeUpstreamUrl } from '../utils/uri.js'
 import { buildUpstreamHeaders } from '../utils/headers.js'
 
 export interface IngestOptions {
@@ -34,15 +34,6 @@ export async function fetchUpstream(
   } finally {
     clearTimeout(timer)
   }
-}
-
-export function decodeSubscriptionBody(raw: string): string[] {
-  const trimmed = raw.trim()
-  const decoded = tryDecodeBase64(trimmed) ?? trimmed
-  return decoded
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0 && !line.startsWith('#'))
 }
 
 export async function ingestSubscription(

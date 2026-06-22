@@ -1,5 +1,6 @@
 import { stringify } from 'yaml'
-import type { Hysteria2Proxy, ProxyNode, ShadowsocksProxy, TrojanProxy, VlessProxy, VmessProxy } from '../types/proxy.js'
+import type { ClashExtras } from '../profiles/merge.js'
+import type { Hysteria2Proxy, ProxyNode, RawProxy, ShadowsocksProxy, TrojanProxy, VlessProxy, VmessProxy } from '../types/proxy.js'
 
 function vlessProxy(node: VlessProxy): Record<string, unknown> {
   const proxy: Record<string, unknown> = {
@@ -117,8 +118,6 @@ function trojanProxy(node: TrojanProxy): Record<string, unknown> {
   return proxy
 }
 
-import type { ClashExtras } from '../profiles/merge.js'
-
 export function formatClashProxies(nodes: ProxyNode[], extras?: ClashExtras): string {
   const proxies = nodes.map((node) => {
     switch (node.type) {
@@ -133,7 +132,7 @@ export function formatClashProxies(nodes: ProxyNode[], extras?: ClashExtras): st
       case 'hysteria2':
         return hysteria2Proxy(node)
       case 'raw':
-        return (node as import('../types/proxy.js').RawProxy).raw
+        return (node as RawProxy).raw
     }
   })
 

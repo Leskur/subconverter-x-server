@@ -2,7 +2,7 @@ import { parse as parseYaml } from 'yaml'
 import type { ConvertInput, ConvertResult } from '../types/proxy.js'
 import { formatProxies } from './format.js'
 import { ingestSubscription, type IngestOptions } from './ingest.js'
-import { parseProxyLines, parseSubscription } from './parse.js'
+import { parseSubscription } from './parse.js'
 import { resolveClient } from './client.js'
 import { resolveClashExtras } from '../profiles/merge.js'
 import { expandRulesetRefs } from '../profiles/ruleset.js'
@@ -38,13 +38,15 @@ export interface ConvertOptions extends IngestOptions {
   fallbackUserAgent?: string
 }
 
-const DEFAULT_FALLBACK_USER_AGENT =
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
+const DEFAULT_FALLBACK_USER_AGENT = 'clash.meta'
 
 const CLIENT_UA: Record<string, string> = {
   clash: 'ClashforWindows/0.20.39',
   surge: 'Surge/2024',
   singbox: 'SFA/1.13.13 (678; sing-box 1.13.13; language zh_CN)',
+  surfboard: 'Surfboard/2.4',
+  loon: 'Loon/3.2',
+  quanx: 'Quantumult%20X/1.0.30',
 }
 
 function isBrowserUserAgent(userAgent: string | undefined): boolean {
@@ -85,6 +87,11 @@ export async function convertSubscription(
     }
   }
 
+  // Retry strategy: if upstream returned 0 nodes, try again with a different UA.
+  // 1. Client retry: use a known UA for the target client (e.g. Clash, Surge).
+  //    This handles airports that require a specific client UA to return YAML.
+  // 2. Fallback retry: if no client-specific UA applies, use a generic clash.meta UA.
+  //    Skipped if the original UA is already a browser UA (already overridden above).
   const needsClientRetry =
     nodes.length === 0 && input.forceClient && CLIENT_UA[input.forceClient]
   const fallbackUa = options.fallbackUserAgent ?? DEFAULT_FALLBACK_USER_AGENT
@@ -164,27 +171,5 @@ export async function convertSubscription(
     proxyGroupsSource,
     proxyGroupCount,
     ruleCount,
-  }
-}
-
-export async function convertFromLines(
-  lines: string[],
-  input: Pick<ConvertInput, 'requestHeaders' | 'forceClient'> = {},
-  options: ConvertOptions = {},
-): Promise<ConvertResult> {
-  const nodes = parseProxyLines(lines)
-
-  if (nodes.length === 0) {
-    throw new Error('No supported proxy nodes found in input')
-  }
-
-  const userAgent = input.requestHeaders?.get('user-agent') ?? undefined
-  const client = resolveClient(userAgent, input.forceClient, options.defaultClient ?? 'singbox')
-  const formatted = formatProxies(nodes, client)
-
-  return {
-    ...formatted,
-    client,
-    nodeCount: nodes.length,
   }
 }

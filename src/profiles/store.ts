@@ -71,6 +71,3 @@ export class FileRulesStore {
 }
 
 export const rulesStore = new FileRulesStore()
-
-// @deprecated use rulesStore
-export const profileStore = rulesStore

@@ -104,11 +104,13 @@ async function runCli(argv: string[]): Promise<void> {
   subconverter-x serve [--host=0.0.0.0] [--port=15500]
 
 HTTP API:
-  GET /health
-  GET /api/admin/meta
-  GET /api/rules
-  PUT /api/rules
-  GET /sub?url=<upstream>&target=<singbox|clash|surge>
+  GET  /health
+  GET  /api/admin/meta
+  GET  /api/rules
+  PUT  /api/rules
+  GET  /api/rulesets
+  PUT  /api/rulesets
+  GET  /sub?url=<upstream>&target=<singbox|clash|surge|surfboard|loon|quanx>
        (target optional; falls back to client User-Agent. ua= is an alias for target.)`)
 }
 

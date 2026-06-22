@@ -7,7 +7,9 @@ import type {
   VmessProxy,
 } from '../types/proxy.js'
 
-function buildTransport(node: VlessProxy | TrojanProxy): Record<string, unknown> | undefined {
+type TransportableNode = VlessProxy | TrojanProxy | VmessProxy
+
+function buildTransport(node: TransportableNode): Record<string, unknown> | undefined {
   const network = node.network ?? 'tcp'
   if (network === 'tcp' || network === 'none') return undefined
 
@@ -103,29 +105,6 @@ function shadowsocksOutbound(node: ShadowsocksProxy): Record<string, unknown> {
   }
 }
 
-function buildVmessTransport(node: VmessProxy): Record<string, unknown> | undefined {
-  const network = node.network ?? 'tcp'
-  if (network === 'tcp' || network === 'none') return undefined
-
-  const transport: Record<string, unknown> = { type: network }
-
-  if (network === 'ws') {
-    transport.path = node.path || '/'
-    if (node.host) transport.headers = { Host: node.host }
-  }
-
-  if (network === 'grpc') {
-    transport.service_name = node.path || ''
-  }
-
-  if (network === 'http' || network === 'h2') {
-    transport.path = node.path || '/'
-    transport.host = node.host ? [node.host] : undefined
-  }
-
-  return transport
-}
-
 function vmessOutbound(node: VmessProxy): Record<string, unknown> {
   const outbound: Record<string, unknown> = {
     type: 'vmess',
@@ -151,7 +130,7 @@ function vmessOutbound(node: VmessProxy): Record<string, unknown> {
     }
   }
 
-  const transport = buildVmessTransport(node)
+  const transport = buildTransport(node)
   if (transport) outbound.transport = transport
 
   return outbound

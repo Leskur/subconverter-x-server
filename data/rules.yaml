@@ -1,4 +1,4 @@
-rules-merge: prepend
+rules-merge: replace
 rules:
   - DOMAIN-SUFFIX,adobe.io,REJECT
   - DOMAIN-SUFFIX,adobestats.io,REJECT

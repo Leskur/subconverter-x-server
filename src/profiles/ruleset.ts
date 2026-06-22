@@ -1,3 +1,5 @@
+import { assertSafeUpstreamUrl } from '../utils/uri.js'
+
 const RULESET_PREFIX = 'rule-set:'
 const CACHE_TTL_MS = 10 * 60 * 1000 // 10 minutes
 
@@ -30,6 +32,7 @@ async function fetchRuleset(url: string): Promise<string[]> {
     return cached.rules
   }
 
+  assertSafeUpstreamUrl(url)
   const res = await fetch(url, { headers: { 'User-Agent': 'subconverter-x' } })
   if (!res.ok) throw new Error(`Failed to fetch ruleset ${url}: ${res.status}`)
   const text = await res.text()

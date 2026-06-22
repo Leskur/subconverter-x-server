@@ -3,11 +3,9 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
-  mergeProxyGroups,
   mergeRules,
   normalizeMergedRules,
   resolveClashExtras,
-  fillProxyGroupNodes,
 } from '../src/profiles/merge.js'
 import { FileRulesStore } from '../src/profiles/store.js'
 
@@ -50,59 +48,24 @@ describe('normalizeMergedRules', () => {
   })
 })
 
-describe('mergeProxyGroups', () => {
-  const upstream = [
-    { name: 'Auto', type: 'url-test', proxies: ['A', 'B'] },
-    { name: 'PROXY', type: 'select', proxies: ['A'] },
-  ]
-  const custom = [{ name: 'PROXY', type: 'select', proxies: [] }]
-
-  it('replace uses only custom groups', () => {
-    expect(mergeProxyGroups(custom, upstream, 'replace')).toEqual(custom)
-  })
-
-  it('merge keeps upstream groups and overrides same name', () => {
-    expect(mergeProxyGroups(custom, upstream, 'merge')).toEqual([
-      { name: 'Auto', type: 'url-test', proxies: ['A', 'B'] },
-      { name: 'PROXY', type: 'select', proxies: [] },
-    ])
-  })
-})
-
 describe('resolveClashExtras', () => {
-  it('uses rules config and fills empty proxy group', () => {
-    const nodes = [
-      { type: 'trojan' as const, name: 'A', server: '1.1.1.1', port: 443, password: 'pw' },
-      { type: 'trojan' as const, name: 'B', server: '2.2.2.2', port: 443, password: 'pw' },
-    ]
-
-    const extras = resolveClashExtras(nodes, {
-      rules: ['GEOIP,CN,DIRECT', 'MATCH,PROXY'],
-      proxyGroups: [{ name: 'PROXY', type: 'select', proxies: [] }],
-      rulesMerge: 'replace',
-      proxyGroupsMerge: 'replace',
-    })
+  it('uses rules config and passes through upstream extras', () => {
+    const extras = resolveClashExtras(
+      { rules: ['GEOIP,CN,DIRECT', 'MATCH,PROXY'], rulesMerge: 'replace' },
+      { proxyGroups: [{ name: 'PROXY', type: 'select', proxies: [] }] },
+    )
 
     expect(extras.rules).toEqual(['GEOIP,CN,DIRECT', 'MATCH,PROXY'])
     expect(extras.proxyGroups?.[0]).toMatchObject({
       name: 'PROXY',
-      proxies: ['A', 'B'],
+      type: 'select',
+      proxies: [],
     })
   })
 
   it('merges custom and upstream rules when mode is prepend', () => {
-    const nodes = [
-      { type: 'trojan' as const, name: 'A', server: '1.1.1.1', port: 443, password: 'pw' },
-    ]
-
     const extras = resolveClashExtras(
-      nodes,
-      {
-        rules: ['GEOIP,CN,DIRECT'],
-        proxyGroups: [],
-        rulesMerge: 'prepend',
-        proxyGroupsMerge: 'replace',
-      },
+      { rules: ['GEOIP,CN,DIRECT'], rulesMerge: 'prepend' },
       {
         rules: ['DOMAIN,example.com,PROXY', 'MATCH,PROXY'],
         proxyGroups: [{ name: 'PROXY', type: 'select', proxies: ['A'] }],
@@ -119,15 +82,13 @@ describe('resolveClashExtras', () => {
       proxies: ['A'],
     })
   })
-})
 
-describe('fillProxyGroupNodes', () => {
-  it('replaces wildcard proxies with node names', () => {
-    const groups = fillProxyGroupNodes(
-      [{ name: 'PROXY', type: 'select', proxies: ['*'] }],
-      ['N1', 'N2'],
-    )
-    expect(groups[0]).toMatchObject({ proxies: ['N1', 'N2'] })
+  it('returns upstream rules when no rules config provided', () => {
+    const extras = resolveClashExtras(null, {
+      rules: ['DOMAIN,example.com,PROXY'],
+    })
+
+    expect(extras.rules).toEqual(['DOMAIN,example.com,PROXY'])
   })
 })
 
@@ -139,15 +100,12 @@ describe('FileRulesStore', () => {
 
     await store.save({
       rules: ['MATCH,PROXY'],
-      proxyGroups: [{ name: 'PROXY', type: 'select', proxies: [] }],
       rulesMerge: 'prepend',
-      proxyGroupsMerge: 'merge',
     })
 
     const config = await store.get()
     expect(config?.rules).toEqual(['MATCH,PROXY'])
     expect(config?.rulesMerge).toBe('prepend')
-    expect(config?.proxyGroupsMerge).toBe('merge')
 
     const raw = await readFile(filePath, 'utf8')
     expect(raw).toContain('rules-merge: prepend')
