@@ -1,7 +1,9 @@
 import * as esbuild from 'esbuild'
-import { mkdir, copyFile, chmod } from 'node:fs/promises'
+import { mkdir, copyFile, chmod, readFile } from 'node:fs/promises'
 import { execSync } from 'node:child_process'
 import { platform } from 'node:process'
+
+const pkg = JSON.parse(await readFile('package.json', 'utf8'))
 
 await mkdir('dist', { recursive: true })
 
@@ -12,6 +14,7 @@ const shared = {
   format: 'cjs',
   sourcemap: true,
   external: [],
+  define: { '__VERSION__': JSON.stringify(pkg.version) },
 }
 
 await esbuild.build({

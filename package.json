@@ -1,6 +1,6 @@
 {
   "name": "subconverter-x",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "description": "轻量订阅解析与转换引擎，支持云函数与单文件部署",
   "type": "module",
   "engines": {

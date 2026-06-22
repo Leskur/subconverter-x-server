@@ -2,6 +2,7 @@ import { convertSubscription, fetchRawSubscription } from '../core/convert.js'
 import { resolveClientOrNull } from '../core/client.js'
 import { corsHeadersForHandler, handleAdminMeta, handleRulesApi, handleRulesetsApi } from './profile-api.js'
 import { logRequest } from '../utils/log.js'
+import { VERSION } from '../version.js'
 
 const JSON_HEADERS = corsHeadersForHandler()
 
@@ -85,6 +86,10 @@ export async function handleRequest(request: Request): Promise<Response> {
     const response = jsonResponse({ ok: true, service: 'subconverter-x' })
     logRequest('response', { path: url.pathname, status: response.status, latency: `${Date.now() - started}ms` })
     return response
+  }
+
+  if (url.pathname === '/version') {
+    return jsonResponse({ version: VERSION })
   }
 
   if (url.pathname === '/api/admin/meta') {

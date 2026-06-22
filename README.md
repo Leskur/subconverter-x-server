@@ -19,14 +19,11 @@ npm run dev      # 监听 :15500
 
 ```
 GET  /sub?url=<订阅链接>&target=<格式>
+GET  /version
 GET  /api/rules
 PUT  /api/rules
 GET  /api/rules/default
 POST /api/rules/reset
-GET  /api/templates/clash
-PUT  /api/templates/clash
-GET  /api/templates/singbox
-PUT  /api/templates/singbox
 ```
 
 **`target`** 可选值：`singbox` · `clash` · `surge` · `surfboard` · `loon` · `quanx`
