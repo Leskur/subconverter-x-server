@@ -1,16 +1,3 @@
-import { readFile } from 'node:fs/promises'
-import { join } from 'node:path'
+declare const __VERSION__: string | undefined
 
-let cachedVersion: string | null = null
-
-export async function getAppVersion(): Promise<string> {
-  if (cachedVersion) return cachedVersion
-  try {
-    const raw = await readFile(join(process.cwd(), 'package.json'), 'utf8')
-    const pkg = JSON.parse(raw) as { version?: string }
-    cachedVersion = pkg.version ?? '0.0.0'
-  } catch {
-    cachedVersion = '0.0.0'
-  }
-  return cachedVersion
-}
+export const VERSION: string = typeof __VERSION__ !== 'undefined' ? __VERSION__ : '0.0.0'

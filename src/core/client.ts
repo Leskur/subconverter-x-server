@@ -1,4 +1,4 @@
-import type { ClientType } from '../types/proxy.js'
+import type { ClientType } from './types.js'
 
 const CLIENT_ALIASES: Record<string, ClientType> = {
   singbox: 'singbox',

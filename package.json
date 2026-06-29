@@ -1,16 +1,16 @@
 {
   "name": "subconverter-x",
   "version": "0.0.1",
-  "description": "轻量订阅解析与转换引擎，支持云函数与单文件部署",
+  "description": "轻量订阅解析与转换引擎，支持单文件部署",
   "type": "module",
   "engines": {
     "node": ">=20"
   },
   "bin": {
-    "subconverter-x": "./dist/standalone.cjs"
+    "subconverter-x": "./dist/main.cjs"
   },
   "scripts": {
-    "dev": "tsx watch src/adapters/standalone.ts serve --port 15500",
+    "dev": "tsx watch src/main.ts",
     "build": "tsc --noEmit && node scripts/build.mjs"
   },
   "keywords": [
@@ -29,6 +29,8 @@
     "typescript": "^5.8.3"
   },
   "dependencies": {
+    "@hono/node-server": "^2.0.6",
+    "hono": "^4.12.27",
     "yaml": "^2.8.0"
   }
 }

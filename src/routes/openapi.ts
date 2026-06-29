@@ -1,4 +1,4 @@
-import { VERSION } from '../version.js'
+import { VERSION } from '../utils/version.js'
 
 export function getOpenApiSpec(serverUrl: string): Record<string, unknown> {
   return {

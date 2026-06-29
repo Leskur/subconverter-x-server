@@ -1,4 +1,4 @@
-import type { TrojanProxy } from '../../types/proxy.js'
+import type { TrojanProxy } from '../types.js'
 import { decodeName, parseQuery } from '../../utils/uri.js'
 
 export function parseTrojanLine(line: string): TrojanProxy | null {

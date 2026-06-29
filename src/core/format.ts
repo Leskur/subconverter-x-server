@@ -1,4 +1,4 @@
-import type { ClientType, ProxyNode } from '../types/proxy.js'
+import type { ClientType, ProxyNode } from './types.js'
 import { formatClashProxies } from '../formatters/clash.js'
 import { formatSingboxOutbounds } from '../formatters/singbox.js'
 import { formatLoonProxies } from '../formatters/loon.js'

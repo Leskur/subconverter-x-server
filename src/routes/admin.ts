@@ -1,36 +1,14 @@
-import { getAppVersion } from '../utils/version.js'
+import { Hono } from 'hono'
+import { VERSION } from '../utils/version.js'
 
-function corsOrigin(): string {
-  return process.env.CORS_ORIGIN ?? '*'
-}
+const app = new Hono()
 
-function corsHeaders(): Record<string, string> {
-  return {
-    'Access-Control-Allow-Origin': corsOrigin(),
-    'Access-Control-Allow-Methods': 'GET, PUT, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  }
-}
-
-function jsonResponse(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: {
-      ...corsHeaders(),
-      'Content-Type': 'application/json; charset=utf-8',
-    },
-  })
-}
-
-function isAuthEnabled(): boolean {
-  return !!process.env.ADMIN_TOKEN
-}
-
-export async function handleAdminMeta(): Promise<Response> {
-  const version = await getAppVersion()
-  return jsonResponse({
+app.get('/meta', (c) => {
+  return c.json({
     service: 'subconverter-x',
-    version,
-    authEnabled: isAuthEnabled(),
+    version: VERSION,
+    authEnabled: !!process.env.ADMIN_TOKEN,
   })
-}
+})
+
+export default app

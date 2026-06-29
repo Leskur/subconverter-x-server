@@ -1,4 +1,4 @@
-import type { Hysteria2Proxy } from '../../types/proxy.js'
+import type { Hysteria2Proxy } from '../types.js'
 import { decodeName, parseQuery } from '../../utils/uri.js'
 
 export function parseHysteria2Line(line: string): Hysteria2Proxy | null {

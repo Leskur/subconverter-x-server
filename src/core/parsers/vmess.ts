@@ -1,4 +1,4 @@
-import type { VmessProxy } from '../../types/proxy.js'
+import type { VmessProxy } from '../types.js'
 import { decodeBase64Loose } from '../../utils/uri.js'
 
 interface VmessJson {

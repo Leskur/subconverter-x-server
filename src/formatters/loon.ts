@@ -5,7 +5,7 @@ import type {
   TrojanProxy,
   VlessProxy,
   VmessProxy,
-} from '../types/proxy.js'
+} from '../core/types.js'
 import type { ClashExtras } from '../rules/merge.js'
 
 function ssLine(node: ShadowsocksProxy): string {

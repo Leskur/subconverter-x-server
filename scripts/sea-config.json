@@ -1,5 +1,5 @@
 {
-  "main": "dist/standalone.cjs",
+  "main": "dist/main.cjs",
   "mainFormat": "commonjs",
   "output": "dist/subconverter-x.blob",
   "disableExperimentalSEAWarning": true,

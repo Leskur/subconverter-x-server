@@ -5,7 +5,7 @@ import type {
   TrojanProxy,
   VlessProxy,
   VmessProxy,
-} from '../types/proxy.js'
+} from '../core/types.js'
 
 type TransportableNode = VlessProxy | TrojanProxy | VmessProxy
 

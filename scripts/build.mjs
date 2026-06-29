@@ -19,17 +19,11 @@ const shared = {
 
 await esbuild.build({
   ...shared,
-  entryPoints: ['src/adapters/standalone.ts'],
-  outfile: 'dist/standalone.cjs',
+  entryPoints: ['src/main.ts'],
+  outfile: 'dist/main.cjs',
 })
 
-await esbuild.build({
-  ...shared,
-  entryPoints: ['src/adapters/lambda.ts'],
-  outfile: 'dist/lambda.cjs',
-})
-
-console.log('Build complete: dist/standalone.cjs, dist/lambda.cjs')
+console.log('Build complete: dist/main.cjs')
 
 // SEA 打包
 console.log('Building SEA binary...')

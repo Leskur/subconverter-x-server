@@ -1,5 +1,5 @@
 import { parse as parseYaml } from 'yaml'
-import type { ConvertInput, ConvertResult } from '../types/proxy.js'
+import type { ConvertInput, ConvertResult } from './types.js'
 import { formatProxies } from './format.js'
 import { ingestSubscription, type IngestOptions } from './ingest.js'
 import { parseSubscription } from './parse.js'
@@ -7,7 +7,7 @@ import { resolveClient } from './client.js'
 import { resolveClashExtras } from '../rules/merge.js'
 import { expandRulesetRefs } from '../rules/ruleset.js'
 import { rulesStore } from '../rules/store.js'
-import { templateStore } from '../templates/templates.js'
+import { templateStore } from './templates.js'
 
 const CLASH_SKIP_KEYS = new Set(['proxies', 'proxy-groups', 'rules'])
 

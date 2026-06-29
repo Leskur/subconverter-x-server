@@ -1,4 +1,4 @@
-import type { VlessProxy } from '../../types/proxy.js'
+import type { VlessProxy } from '../types.js'
 import { decodeName, parseQuery } from '../../utils/uri.js'
 
 export function parseVlessLine(line: string): VlessProxy | null {

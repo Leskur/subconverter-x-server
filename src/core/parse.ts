@@ -1,4 +1,4 @@
-import type { ProxyNode } from '../types/proxy.js'
+import type { ProxyNode } from './types.js'
 import { tryDecodeBase64 } from '../utils/uri.js'
 import { parseClashConfig } from './parsers/clash.js'
 import { parseShadowsocksLine } from './parsers/shadowsocks.js'

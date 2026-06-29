@@ -1,146 +1,50 @@
-import { convertSubscription, fetchRawSubscription } from './core/convert.js'
-import { resolveClientOrNull } from './core/client.js'
-import { handleAdminMeta } from './routes/admin.js'
-import { handleRulesApi } from './routes/rules.js'
-import { handleRulesetsApi } from './routes/rulesets.js'
-import { getDocsHtml } from './docs/openapi.js'
+import { Hono } from 'hono'
+import { cors } from 'hono/cors'
+import { createMiddleware } from 'hono/factory'
 import { logRequest } from './utils/log.js'
-import { VERSION } from './version.js'
+import adminRoutes from './routes/admin.js'
+import rulesRoutes from './routes/rules.js'
+import rulesetsRoutes from './routes/rulesets.js'
+import subRoutes from './routes/sub.js'
+import systemRoutes from './routes/system.js'
 
 function corsOrigin(): string {
   return process.env.CORS_ORIGIN ?? '*'
 }
 
-export function corsHeadersForHandler(): Record<string, string> {
-  return {
-    'Access-Control-Allow-Origin': corsOrigin(),
-    'Access-Control-Allow-Methods': 'GET, PUT, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  }
-}
-
-const JSON_HEADERS = corsHeadersForHandler()
-
-function jsonResponse(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: {
-      ...JSON_HEADERS,
-      'Content-Type': 'application/json; charset=utf-8',
-    },
+function requestLogger() {
+  return createMiddleware(async (c, next) => {
+    const started = Date.now()
+    const method = c.req.method
+    const path = new URL(c.req.url).pathname
+    const ua = c.req.header('user-agent') ?? undefined
+    logRequest('request', { method, path, ua })
+    await next()
+    logRequest('response', { path, status: c.res.status, latency: `${Date.now() - started}ms` })
   })
 }
 
-function textResponse(body: string, contentType: string, status = 200): Response {
-  return new Response(body, {
-    status,
-    headers: {
-      ...JSON_HEADERS,
-      'Content-Type': contentType,
-    },
-  })
-}
+const app = new Hono()
 
-async function handleSub(request: Request, started: number): Promise<Response> {
-  const url = new URL(request.url)
-  const userAgent = request.headers.get('user-agent') ?? undefined
-  const upstreamUrl = url.searchParams.get('url')
-  const forceClient = url.searchParams.get('target') ?? url.searchParams.get('ua') ?? undefined
+app.use(
+  '*',
+  cors({
+    origin: corsOrigin(),
+    allowMethods: ['GET', 'PUT', 'OPTIONS'],
+    allowHeaders: ['Content-Type', 'Authorization'],
+  }),
+)
 
-  if (!upstreamUrl) {
-    const response = jsonResponse({ error: 'Missing required query parameter: url' }, 400)
-    logRequest('request', { path: url.pathname, status: 400, error: 'missing url', latency: `${Date.now() - started}ms` })
-    return response
-  }
+app.use('*', requestLogger())
 
-  const client = resolveClientOrNull(userAgent, forceClient)
+app.route('/', systemRoutes)
+app.route('/api/admin', adminRoutes)
+app.route('/api/rules', rulesRoutes)
+app.route('/api/rulesets', rulesetsRoutes)
+app.route('/sub', subRoutes)
 
-  logRequest('request', { client: client ?? 'passthrough', target: forceClient, ua: userAgent, url: upstreamUrl })
+app.all('/api/profiles/*', (c) => c.json({ error: 'Profiles API removed. Use GET/PUT /api/rules' }, 410))
 
-  if (!client) {
-    try {
-      const raw = await fetchRawSubscription({ upstreamUrl, requestHeaders: request.headers })
-      const response = textResponse(raw, 'text/plain; charset=utf-8', 200)
-      logRequest('response', { status: 200, client: 'passthrough', bytes: raw.length, latency: `${Date.now() - started}ms`, url: upstreamUrl })
-      return response
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Fetch failed'
-      const response = jsonResponse({ error: message }, 400)
-      logRequest('response', { status: 400, error: message, latency: `${Date.now() - started}ms`, url: upstreamUrl })
-      return response
-    }
-  }
+app.notFound((c) => c.json({ error: 'Not Found' }, 404))
 
-  try {
-    const result = await convertSubscription({ upstreamUrl, requestHeaders: request.headers, forceClient: client, managedConfigUrl: request.url })
-    const response = textResponse(result.body, result.contentType, 200)
-    logRequest('response', { status: 200, client: result.client, format: result.format, groups: result.proxyGroupsSource, nodeCount: result.nodeCount, groupCount: result.proxyGroupCount, ruleCount: result.ruleCount, size: result.body.length, latency: `${Date.now() - started}ms`, url: upstreamUrl })
-    return response
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Conversion failed'
-    const response = jsonResponse({ error: message }, 400)
-    logRequest('response', { status: 400, client, error: message, latency: `${Date.now() - started}ms`, url: upstreamUrl })
-    return response
-  }
-}
-
-export async function handleRequest(request: Request): Promise<Response> {
-  const started = Date.now()
-  const url = new URL(request.url)
-  const userAgent = request.headers.get('user-agent') ?? undefined
-
-  if (request.method === 'OPTIONS') {
-    return new Response(null, {
-      status: 204,
-      headers: JSON_HEADERS,
-    })
-  }
-
-  if (url.pathname === '/health') {
-    logRequest('request', { method: request.method, path: url.pathname, ua: userAgent })
-    const response = jsonResponse({ ok: true, service: 'subconverter-x' })
-    logRequest('response', { path: url.pathname, status: response.status, latency: `${Date.now() - started}ms` })
-    return response
-  }
-
-  if (url.pathname === '/version') {
-    return jsonResponse({ version: VERSION })
-  }
-
-  if (url.pathname === '/api/admin/meta') {
-    return handleAdminMeta()
-  }
-
-  if (url.pathname === '/api/rules' || url.pathname === '/api/rules/default' || url.pathname === '/api/rules/reset') {
-    return handleRulesApi(request, url.pathname)
-  }
-
-  if (url.pathname === '/api/rulesets') {
-    return handleRulesetsApi(request)
-  }
-
-  if (url.pathname.startsWith('/api/profiles')) {
-    return jsonResponse({ error: 'Profiles API removed. Use GET/PUT /api/rules' }, 410)
-  }
-
-  if (url.pathname === '/sub') {
-    if (request.method !== 'GET') {
-      return jsonResponse({ error: 'Method Not Allowed' }, 405)
-    }
-    return handleSub(request, started)
-  }
-
-  if (url.pathname === '/docs' || url.pathname === '/docs/') {
-    const origin = url.origin
-    return new Response(getDocsHtml(origin), {
-      status: 200,
-      headers: { 'Content-Type': 'text/html; charset=utf-8' },
-    })
-  }
-
-  logRequest('request', { method: request.method, path: url.pathname, ua: userAgent })
-  const response = jsonResponse({ error: 'Not Found' }, 404)
-  logRequest('response', { path: url.pathname, status: response.status, latency: `${Date.now() - started}ms` })
-  return response
-}
-
+export default app

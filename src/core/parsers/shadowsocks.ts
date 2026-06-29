@@ -1,4 +1,4 @@
-import type { ShadowsocksProxy } from '../../types/proxy.js'
+import type { ShadowsocksProxy } from '../types.js'
 import { decodeBase64Loose, decodeName, parseQuery } from '../../utils/uri.js'
 
 function parsePlugin(pluginValue: string): { plugin?: string; pluginOpts?: string } {
