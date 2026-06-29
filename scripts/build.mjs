@@ -33,9 +33,7 @@ const isMac = platform === 'darwin'
 const binaryName = isWindows ? 'dist/subconverter-x.exe' : 'dist/subconverter-x'
 
 // 1. 生成 blob
-const nodeVer = parseInt(process.versions.node.split('.')[0])
-const seaFlag = nodeVer >= 22 ? '--experimental-sea-config' : '--build-sea'
-execSync(`node ${seaFlag} scripts/sea-config.json`, { stdio: 'inherit' })
+execSync('node --experimental-sea-config scripts/sea-config.json', { stdio: 'inherit' })
 
 // 2. 复制 node 可执行文件
 await copyFile(process.execPath, binaryName)
