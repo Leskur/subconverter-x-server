@@ -86,7 +86,7 @@ export function formatLoonProxies(nodes: ProxyNode[], extras?: ClashExtras): str
     ...lines,
     '',
     '[Proxy Group]',
-    `PROXY = select,${names.join(',')}`,
+    `PROXY = select,AUTO,${names.join(',')}`,
     `AUTO = url-test,${names.join(',')},url=http://cp.cloudflare.com/generate_204,interval=300`,
     '',
     '[Rule]',

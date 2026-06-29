@@ -157,11 +157,11 @@ export function formatClashProxies(nodes: ProxyNode[], extras?: ClashExtras): st
   )
 
   const defaultGroups: unknown[] = []
-  if (!upstreamNames.has('PROXY')) {
-    defaultGroups.push({ name: 'PROXY', type: 'select', proxies: nodeNames })
-  }
   if (!upstreamNames.has('AUTO')) {
     defaultGroups.push({ name: 'AUTO', type: 'url-test', url: 'http://cp.cloudflare.com/generate_204', interval: 300, proxies: nodeNames })
+  }
+  if (!upstreamNames.has('PROXY')) {
+    defaultGroups.push({ name: 'PROXY', type: 'select', proxies: ['AUTO', ...nodeNames] })
   }
 
   const groups = [...upstreamGroups.map(fillProxies), ...defaultGroups]

@@ -118,7 +118,7 @@ export function formatQuanxProxies(nodes: ProxyNode[], extras?: ClashExtras): st
     ...lines,
     '',
     '[policy]',
-    `static=PROXY, ${tags.join(', ')}, img-url=https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Proxy.png`,
+    `static=PROXY, AUTO, ${tags.join(', ')}, img-url=https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Proxy.png`,
     `url-latency-benchmark=AUTO, server-tag-regex=.*, check-interval=600, tolerance=0, img-url=https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Auto.png`,
     '',
     '[filter_local]',
