@@ -144,7 +144,14 @@ export function formatClashProxies(nodes: ProxyNode[], extras?: ClashExtras, upd
     const g = group as Record<string, unknown>
     const proxies = g['proxies']
     if (Array.isArray(proxies) && proxies.length === 0) {
+      if (g['name'] === 'PROXY') {
+        return { ...g, proxies: ['AUTO', ...nodeNames] }
+      }
       return { ...g, proxies: [...nodeNames] }
+    }
+    // Inject AUTO into PROXY group if missing
+    if (g['name'] === 'PROXY' && Array.isArray(proxies) && !proxies.includes('AUTO')) {
+      return { ...g, proxies: ['AUTO', ...proxies] }
     }
     return g
   }
