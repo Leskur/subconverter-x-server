@@ -230,9 +230,8 @@ function parseClashRule(rule: string): Record<string, unknown> | null {
     case 'DOMAIN-KEYWORD':
       return { domain_keyword: value, outbound }
     case 'GEOSITE':
-      return { geosite: value, outbound }
     case 'GEOIP':
-      return { geoip: value, outbound }
+      return null
     case 'IP-CIDR':
     case 'IP-CIDR6':
       return { ip_cidr: value, outbound }
