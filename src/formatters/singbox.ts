@@ -280,10 +280,14 @@ export function formatSingboxConfig(nodes: ProxyNode[], template: Record<string,
   const existingTags = new Set(templateOutbounds.map((o) => String(o.tag)))
   const autoOutbounds = existingTags.has('AUTO') ? [] : [urltestOutbound]
   const selectorOutbounds = existingTags.has('PROXY') ? [] : [selectorOutbound]
+  const directOutbound = existingTags.has('direct') ? [] : [{ type: 'direct', tag: 'direct' }]
+  const blockOutbound = existingTags.has('block') ? [] : [{ type: 'block', tag: 'block' }]
 
   config.outbounds = [
     ...selectorOutbounds,
     ...autoOutbounds,
+    ...directOutbound,
+    ...blockOutbound,
     ...nodeOutbounds,
     ...templateOutbounds,
   ]
