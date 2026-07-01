@@ -199,14 +199,14 @@ export function formatSingboxOutbounds(nodes: ProxyNode[]): Record<string, unkno
   })
 }
 
-function normalizePolicy(policy: string): string {
+function normalizePolicy(policy: string): { action: string; outbound?: string } {
   switch (policy.trim().toUpperCase()) {
     case 'DIRECT':
-      return 'direct'
+      return { action: 'route', outbound: 'direct' }
     case 'REJECT':
-      return 'block'
+      return { action: 'reject' }
     default:
-      return policy.trim()
+      return { action: 'route', outbound: policy.trim() }
   }
 }
 
@@ -220,29 +220,29 @@ function parseClashRule(rule: string): Record<string, unknown> | null {
   const type = parts[0].toUpperCase()
   const value = parts[1]
   const policy = parts[2] ?? 'PROXY'
-  const outbound = normalizePolicy(policy)
+  const { action, outbound } = normalizePolicy(policy)
 
   switch (type) {
     case 'DOMAIN':
-      return { domain: [value], outbound }
+      return { domain: [value], action, ...(outbound ? { outbound } : {}) }
     case 'DOMAIN-SUFFIX':
-      return { domain_suffix: [value], outbound }
+      return { domain_suffix: [value], action, ...(outbound ? { outbound } : {}) }
     case 'DOMAIN-KEYWORD':
-      return { domain_keyword: [value], outbound }
+      return { domain_keyword: [value], action, ...(outbound ? { outbound } : {}) }
     case 'GEOSITE':
     case 'GEOIP':
       return null
     case 'IP-CIDR':
     case 'IP-CIDR6':
-      return { ip_cidr: [value], outbound }
+      return { ip_cidr: [value], action, ...(outbound ? { outbound } : {}) }
     case 'SRC-IP-CIDR':
-      return { source_ip_cidr: [value], outbound }
+      return { source_ip_cidr: [value], action, ...(outbound ? { outbound } : {}) }
     case 'DST-PORT':
-      return { port: Number(value), outbound }
+      return { port: [Number(value)], action, ...(outbound ? { outbound } : {}) }
     case 'SRC-PORT':
-      return { source_port: Number(value), outbound }
+      return { source_port: [Number(value)], action, ...(outbound ? { outbound } : {}) }
     case 'PROCESS-NAME':
-      return { process_name: [value], outbound }
+      return { process_name: [value], action, ...(outbound ? { outbound } : {}) }
     case 'MATCH':
     case 'FINAL':
       return null
