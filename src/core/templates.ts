@@ -24,7 +24,7 @@ proxy-groups:
 
 const DEFAULT_SINGBOX_TEMPLATE = `{
   "inbounds": [
-    { "type": "mixed", "listen": "127.0.0.1", "listen_port": 7890 }
+    { "type": "mixed", "listen": "127.0.0.1", "listen_port": 7890, "set_system_proxy": true }
   ],
   "outbounds": [],
   "route": {
