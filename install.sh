@@ -54,11 +54,5 @@ systemctl --user daemon-reload
 systemctl --user enable "$SERVICE"
 systemctl --user restart "$SERVICE"
 
-# 等待启动并提取 token
-sleep 2
-TOKEN=$(journalctl --user -u "$SERVICE" --no-pager -n 20 2>/dev/null | grep -oP 'Auth token: \K\S+' | tail -1)
-
 echo "✅ Done: http://0.0.0.0:${PORT:-15500}"
-if [ -n "$TOKEN" ]; then
-  echo "🔑 Auth token: $TOKEN"
-fi
+echo "🔑 查看认证 Token: cat ~/.config/subconverter-x/config.yaml"
