@@ -3,6 +3,7 @@ import { dirname, join } from 'node:path'
 import { randomBytes } from 'node:crypto'
 import { parse, stringify } from 'yaml'
 import { appDataDir } from '../utils/paths.js'
+import type { UpdateIntervalMode } from '../subscription/types.js'
 
 function configPath(): string {
   return join(appDataDir(), 'config.yaml')
@@ -10,12 +11,20 @@ function configPath(): string {
 
 interface AppConfig {
   token: string
+  updateInterval: UpdateIntervalMode
+}
+
+function parseUpdateInterval(raw: unknown): UpdateIntervalMode {
+  if (raw === 'auto') return 'auto'
+  if (typeof raw === 'number' && raw >= 300) return raw
+  return 'auto'
 }
 
 function normalizeConfig(raw: unknown): AppConfig {
   const record = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {}
   const token = typeof record.token === 'string' ? record.token.trim() : ''
-  return { token }
+  const updateInterval = parseUpdateInterval(record.updateInterval ?? record['update-interval'])
+  return { token, updateInterval }
 }
 
 function generateToken(): string {
@@ -34,7 +43,16 @@ export class FileConfigStore {
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
     }
-    return { token: '' }
+    return { token: '', updateInterval: 'auto' }
+  }
+
+  private async write(config: AppConfig): Promise<void> {
+    await mkdir(dirname(this.path), { recursive: true })
+    const yaml = stringify({
+      token: config.token || undefined,
+      'update-interval': config.updateInterval,
+    })
+    await writeFile(this.path, yaml, 'utf8')
   }
 
   async ensureToken(): Promise<string> {
@@ -42,10 +60,18 @@ export class FileConfigStore {
     if (config.token) return config.token
 
     const token = generateToken()
-    await mkdir(dirname(this.path), { recursive: true })
-    const yaml = stringify({ token })
-    await writeFile(this.path, yaml, 'utf8')
+    await this.write({ ...config, token })
     return token
+  }
+
+  async getUpdateInterval(): Promise<UpdateIntervalMode> {
+    const config = await this.get()
+    return config.updateInterval
+  }
+
+  async setUpdateInterval(interval: UpdateIntervalMode): Promise<void> {
+    const config = await this.get()
+    await this.write({ ...config, updateInterval: interval })
   }
 }
 

@@ -1,11 +1,11 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { appDataDir } from '../utils/paths.js'
 
 export type TemplateType = 'clash' | 'singbox'
 
 function templateFilePath(type: TemplateType): string {
-  return join(appDataDir(), `template-${type}.${type === 'singbox' ? 'json' : 'yaml'}`)
+  return join(appDataDir(), 'templates', `template-${type}.${type === 'singbox' ? 'json' : 'yaml'}`)
 }
 
 const DEFAULT_CLASH_TEMPLATE = `mixed-port: 7890
@@ -66,7 +66,7 @@ export class FileTemplateStore implements TemplateStore {
 
   async save(type: TemplateType, content: string): Promise<void> {
     const path = templateFilePath(type)
-    await mkdir(appDataDir(), { recursive: true })
+    await mkdir(dirname(path), { recursive: true })
     await writeFile(path, content, 'utf8')
   }
 }

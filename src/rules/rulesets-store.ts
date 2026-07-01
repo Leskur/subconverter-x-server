@@ -1,5 +1,6 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
+import { parse, stringify } from 'yaml'
 import { appDataDir } from '../utils/paths.js'
 
 export interface CustomRuleset {
@@ -10,14 +11,14 @@ export interface CustomRuleset {
 }
 
 function filePath(): string {
-  return join(appDataDir(), 'rulesets.json')
+  return join(appDataDir(), 'rulesets.yaml')
 }
 
 export class FileRulesetsStore {
   async getAll(): Promise<CustomRuleset[]> {
     try {
       const content = await readFile(filePath(), 'utf8')
-      const parsed = JSON.parse(content)
+      const parsed = parse(content)
       return Array.isArray(parsed) ? parsed : []
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
@@ -27,7 +28,7 @@ export class FileRulesetsStore {
 
   async save(rulesets: CustomRuleset[]): Promise<CustomRuleset[]> {
     await mkdir(dirname(filePath()), { recursive: true })
-    await writeFile(filePath(), JSON.stringify(rulesets, null, 2), 'utf8')
+    await writeFile(filePath(), stringify(rulesets), 'utf8')
     return rulesets
   }
 }
