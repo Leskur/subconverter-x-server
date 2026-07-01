@@ -224,25 +224,25 @@ function parseClashRule(rule: string): Record<string, unknown> | null {
 
   switch (type) {
     case 'DOMAIN':
-      return { domain: value, outbound }
+      return { domain: [value], outbound }
     case 'DOMAIN-SUFFIX':
-      return { domain_suffix: value, outbound }
+      return { domain_suffix: [value], outbound }
     case 'DOMAIN-KEYWORD':
-      return { domain_keyword: value, outbound }
+      return { domain_keyword: [value], outbound }
     case 'GEOSITE':
     case 'GEOIP':
       return null
     case 'IP-CIDR':
     case 'IP-CIDR6':
-      return { ip_cidr: value, outbound }
+      return { ip_cidr: [value], outbound }
     case 'SRC-IP-CIDR':
-      return { source_ip_cidr: value, outbound }
+      return { source_ip_cidr: [value], outbound }
     case 'DST-PORT':
       return { port: Number(value), outbound }
     case 'SRC-PORT':
       return { source_port: Number(value), outbound }
     case 'PROCESS-NAME':
-      return { process_name: value, outbound }
+      return { process_name: [value], outbound }
     case 'MATCH':
     case 'FINAL':
       return null
