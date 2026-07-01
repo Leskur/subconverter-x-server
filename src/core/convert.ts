@@ -1,6 +1,6 @@
 import { parse as parseYaml } from 'yaml'
 import type { ConvertInput, ConvertResult } from './types.js'
-import { formatProxies } from './format.js'
+import { formatProxies, type FormatExtras } from './format.js'
 import { ingestSubscription, type IngestOptions } from './ingest.js'
 import { parseSubscription } from './parse.js'
 import { resolveClient } from './client.js'
@@ -31,6 +31,17 @@ async function loadClashTemplate(): Promise<ClashTemplateExtras> {
     return { topLevel, proxyGroups }
   } catch {
     return { topLevel: {}, proxyGroups: [] }
+  }
+}
+
+async function loadSingboxTemplate(): Promise<Record<string, unknown>> {
+  try {
+    const raw = await templateStore.get('singbox')
+    const parsed = JSON.parse(raw)
+    if (parsed && typeof parsed === 'object') return parsed as Record<string, unknown>
+    return {}
+  } catch {
+    return {}
   }
 }
 
@@ -136,10 +147,13 @@ export async function convertSubscription(
 
   const client = resolveClient(userAgent, input.forceClient, options.defaultClient ?? 'singbox')
 
-  let clashExtras
+  const extras: FormatExtras = {}
   let proxyGroupsSource: 'upstream' | 'template' | undefined
+  const rulesConfig = await rulesStore.get()
+  if (rulesConfig?.rules) {
+    rulesConfig.rules = await expandRulesetRefs(rulesConfig.rules)
+  }
   if (client !== 'singbox') {
-    const rulesConfig = await rulesStore.get()
     let resolvedTopLevel = topLevel
     let resolvedProxyGroups = proxyGroups
     if (!resolvedTopLevel || Object.keys(resolvedTopLevel).length === 0) {
@@ -154,18 +168,18 @@ export async function convertSubscription(
     } else {
       proxyGroupsSource = 'upstream'
     }
-    if (rulesConfig?.rules) {
-      rulesConfig.rules = await expandRulesetRefs(rulesConfig.rules)
-    }
-    clashExtras = resolveClashExtras(rulesConfig, { proxyGroups: resolvedProxyGroups, rules, topLevel: resolvedTopLevel })
+    extras.clashExtras = resolveClashExtras(rulesConfig, { proxyGroups: resolvedProxyGroups, rules, topLevel: resolvedTopLevel })
+  } else {
+    extras.singboxTemplate = await loadSingboxTemplate()
+    extras.singboxRules = rulesConfig?.rules
   }
 
   const subConfig = await subscriptionStore.get()
   const updateInterval = subConfig.updateInterval
 
-  const formatted = formatProxies(nodes, client, clashExtras, input.managedConfigUrl, updateInterval)
-  const proxyGroupCount = clashExtras?.proxyGroups?.length
-  const ruleCount = clashExtras?.rules?.length
+  const formatted = formatProxies(nodes, client, extras, input.managedConfigUrl, updateInterval)
+  const proxyGroupCount = extras.clashExtras?.proxyGroups?.length
+  const ruleCount = extras.clashExtras?.rules?.length ?? extras.singboxRules?.length
 
   return {
     ...formatted,

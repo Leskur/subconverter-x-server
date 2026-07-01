@@ -182,8 +182,8 @@ function trojanOutbound(node: TrojanProxy): Record<string, unknown> {
   return outbound
 }
 
-export function formatSingboxOutbounds(nodes: ProxyNode[]): string {
-  const outbounds = nodes.filter((n) => n.type !== 'raw').map((node) => {
+export function formatSingboxOutbounds(nodes: ProxyNode[]): Record<string, unknown>[] {
+  return nodes.filter((n) => n.type !== 'raw').map((node) => {
     switch (node.type) {
       case 'vless':
         return vlessOutbound(node)
@@ -197,6 +197,109 @@ export function formatSingboxOutbounds(nodes: ProxyNode[]): string {
         return hysteria2Outbound(node)
     }
   })
+}
 
-  return JSON.stringify({ outbounds }, null, 2)
+function normalizePolicy(policy: string): string {
+  switch (policy.trim().toUpperCase()) {
+    case 'DIRECT':
+      return 'direct'
+    case 'REJECT':
+      return 'block'
+    default:
+      return policy.trim()
+  }
+}
+
+function parseClashRule(rule: string): Record<string, unknown> | null {
+  const trimmed = rule.trim()
+  if (!trimmed || trimmed.startsWith('#')) return null
+
+  const parts = trimmed.split(',').map((p) => p.trim())
+  if (parts.length < 2) return null
+
+  const type = parts[0].toUpperCase()
+  const value = parts[1]
+  const policy = parts[2] ?? 'PROXY'
+  const outbound = normalizePolicy(policy)
+
+  switch (type) {
+    case 'DOMAIN':
+      return { domain: value, outbound }
+    case 'DOMAIN-SUFFIX':
+      return { domain_suffix: value, outbound }
+    case 'DOMAIN-KEYWORD':
+      return { domain_keyword: value, outbound }
+    case 'GEOSITE':
+      return { geosite: value, outbound }
+    case 'GEOIP':
+      return { geoip: value, outbound }
+    case 'IP-CIDR':
+    case 'IP-CIDR6':
+      return { ip_cidr: value, outbound }
+    case 'SRC-IP-CIDR':
+      return { source_ip_cidr: value, outbound }
+    case 'DST-PORT':
+      return { port: Number(value), outbound }
+    case 'SRC-PORT':
+      return { source_port: Number(value), outbound }
+    case 'PROCESS-NAME':
+      return { process_name: value, outbound }
+    case 'MATCH':
+    case 'FINAL':
+      return null
+    default:
+      return null
+  }
+}
+
+export function convertClashRulesToSingbox(rules: string[]): Record<string, unknown>[] {
+  return rules.map(parseClashRule).filter((r): r is Record<string, unknown> => r !== null)
+}
+
+export function formatSingboxConfig(nodes: ProxyNode[], template: Record<string, unknown>, rules?: string[]): string {
+  const nodeOutbounds = formatSingboxOutbounds(nodes)
+  const nodeTags = nodeOutbounds.map((o) => String(o.tag))
+  const selectorTag = 'PROXY'
+
+  const selectorOutbound = {
+    type: 'selector',
+    tag: selectorTag,
+    outbounds: ['direct', 'AUTO', ...nodeTags],
+    default: 'AUTO',
+  }
+
+  const urltestOutbound = {
+    type: 'urltest',
+    tag: 'AUTO',
+    outbounds: nodeTags,
+    url: 'http://cp.cloudflare.com/generate_204',
+    interval: '5m',
+  }
+
+  const config = { ...template }
+  const templateOutbounds = Array.isArray(config.outbounds) ? (config.outbounds as Record<string, unknown>[]) : []
+  const existingTags = new Set(templateOutbounds.map((o) => String(o.tag)))
+  const autoOutbounds = existingTags.has('AUTO') ? [] : [urltestOutbound]
+  const selectorOutbounds = existingTags.has('PROXY') ? [] : [selectorOutbound]
+
+  config.outbounds = [
+    ...selectorOutbounds,
+    ...autoOutbounds,
+    ...nodeOutbounds,
+    ...templateOutbounds,
+  ]
+
+  if (config.route && typeof config.route === 'object') {
+    const route = config.route as Record<string, unknown>
+    if (!route.final) {
+      route.final = selectorTag
+    }
+    if (rules && rules.length > 0) {
+      const converted = convertClashRulesToSingbox(rules)
+      const existing = Array.isArray(route.rules) ? (route.rules as Record<string, unknown>[]) : []
+      route.rules = [...converted, ...existing]
+    }
+  }
+
+  return JSON.stringify(config, null, 2)
 }

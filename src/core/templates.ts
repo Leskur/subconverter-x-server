@@ -23,22 +23,12 @@ proxy-groups:
 `
 
 const DEFAULT_SINGBOX_TEMPLATE = `{
-  "log": { "level": "info", "timestamp": true },
   "inbounds": [
     { "type": "mixed", "listen": "127.0.0.1", "listen_port": 7890 }
   ],
   "outbounds": [],
   "route": {
-    "rules": [
-      { "geosite": "cn", "outbound": "DIRECT" },
-      { "geoip": "cn", "outbound": "DIRECT" }
-    ],
-    "final": "PROXY",
-    "auto_detect_interface": true
-  },
-  "experimental": {
-    "cache_file": { "enabled": true },
-    "clash_api": { "external_controller": "127.0.0.1:9090" }
+    "final": "PROXY"
   }
 }
 `
