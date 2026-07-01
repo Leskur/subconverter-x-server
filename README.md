@@ -1,4 +1,4 @@
-# subconverter-x
+# subconverter-x-server
 
 轻量的订阅转换中间层。拉取上游订阅、解析多种协议，按客户端类型输出对应格式。
 
@@ -40,6 +40,8 @@ GET  /api/rules/default
 POST /api/rules/reset
 GET  /api/rulesets
 PUT  /api/rulesets
+GET  /api/subscription
+PUT  /api/subscription
 ```
 
 交互式 API 文档：`/docs`
@@ -84,6 +86,8 @@ src/
 ├── formatters/     # Clash · Sing-box · Surfboard · Loon · QuanX
 ├── routes/         # HTTP 路由 + OpenAPI 文档
 ├── rules/          # 规则存储与合并
+├── config/         # 配置存储（token、订阅设置）
+├── subscription/   # 订阅设置
 └── utils/          # 工具函数
 scripts/
 ├── build.mjs       # esbuild 打包 + SEA 单文件构建
