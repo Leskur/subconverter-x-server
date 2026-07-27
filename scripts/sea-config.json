@@ -1,0 +1,8 @@
+{
+  "main": "dist/main.cjs",
+  "mainFormat": "commonjs",
+  "output": "dist/subconverter-x.blob",
+  "disableExperimentalSEAWarning": true,
+  "useCodeCache": false,
+  "useSnapshot": false
+}
