@@ -14,6 +14,8 @@ npm run dev      # 监听 :15500
 
 生产：`npm run build && node dist/main.cjs`
 
+测试：`npm test`
+
 ## 一键安装（Linux）
 
 ```bash
