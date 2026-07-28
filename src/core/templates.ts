@@ -1,5 +1,6 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
+import { URL_TEST_INTERVAL_SEC, URL_TEST_URL } from './constants.js'
 import { appDataDir } from '../utils/paths.js'
 
 function templateFilePath(): string {
@@ -15,8 +16,8 @@ proxy-groups:
     proxies: []
   - name: AUTO
     type: url-test
-    url: http://cp.cloudflare.com/generate_204
-    interval: 300
+    url: ${URL_TEST_URL}
+    interval: ${URL_TEST_INTERVAL_SEC}
     proxies: []
 `
 

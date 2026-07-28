@@ -1,3 +1,9 @@
+import {
+  LOON_DEFAULT_RULES,
+  resolveManagedConfigInterval,
+  URL_TEST_INTERVAL_SEC,
+  URL_TEST_URL,
+} from '../core/constants.js'
 import type {
   Hysteria2Proxy,
   ProxyNode,
@@ -97,8 +103,8 @@ export function formatLoonProxies(nodes: ProxyNode[], extras?: ClashExtras, mana
   const names = nodes.map((n) => n.name)
   const ruleLines = extras?.rules?.length
     ? extras.rules.map((r) => r.replace(/^MATCH,/, 'FINAL,'))
-    : ['FINAL,PROXY']
-  const intervalValue = updateInterval && updateInterval !== 'auto' ? updateInterval : 43200
+    : [...LOON_DEFAULT_RULES]
+  const intervalValue = resolveManagedConfigInterval(updateInterval)
   const header = managedConfigUrl
     ? [`#!MANAGED-CONFIG ${managedConfigUrl} interval=${intervalValue} strict=false`, '']
     : []
@@ -109,7 +115,7 @@ export function formatLoonProxies(nodes: ProxyNode[], extras?: ClashExtras, mana
     '',
     '[Proxy Group]',
     `PROXY = select,AUTO,${names.join(',')}`,
-    `AUTO = url-test,${names.join(',')},url=http://cp.cloudflare.com/generate_204,interval=300`,
+    `AUTO = url-test,${names.join(',')},url=${URL_TEST_URL},interval=${URL_TEST_INTERVAL_SEC}`,
     '',
     '[Rule]',
     ...ruleLines,

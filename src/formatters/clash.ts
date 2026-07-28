@@ -1,6 +1,11 @@
 import { stringify } from 'yaml'
 import type { ClashExtras } from '../rules/merge.js'
 import type { UpdateIntervalMode } from '../subscription/types.js'
+import {
+  MANAGED_CONFIG_INTERVAL_SEC,
+  URL_TEST_INTERVAL_SEC,
+  URL_TEST_URL,
+} from '../core/constants.js'
 import type { Hysteria2Proxy, ProxyNode, RawProxy, ShadowsocksProxy, TrojanProxy, VlessProxy, VmessProxy } from '../core/types.js'
 import { toClashPluginOpts } from '../utils/ss-plugin.js'
 
@@ -176,7 +181,13 @@ export function formatClashProxies(nodes: ProxyNode[], extras?: ClashExtras, upd
 
   const defaultGroups: unknown[] = []
   if (!upstreamNames.has('AUTO')) {
-    defaultGroups.push({ name: 'AUTO', type: 'url-test', url: 'http://cp.cloudflare.com/generate_204', interval: 300, proxies: nodeNames })
+    defaultGroups.push({
+      name: 'AUTO',
+      type: 'url-test',
+      url: URL_TEST_URL,
+      interval: URL_TEST_INTERVAL_SEC,
+      proxies: nodeNames,
+    })
   }
   if (!upstreamNames.has('PROXY')) {
     defaultGroups.push({ name: 'PROXY', type: 'select', proxies: ['AUTO', ...nodeNames] })
@@ -190,7 +201,7 @@ export function formatClashProxies(nodes: ProxyNode[], extras?: ClashExtras, upd
     'proxy-groups': groups,
   }
   if (updateInterval) {
-    const intervalValue = updateInterval === 'auto' ? 43200 : updateInterval
+    const intervalValue = updateInterval === 'auto' ? MANAGED_CONFIG_INTERVAL_SEC : updateInterval
     output['profile'] = { ...(output['profile'] as Record<string, unknown> ?? {}), 'auto-update-interval': intervalValue }
   }
   if (extras?.rules && extras.rules.length > 0) {

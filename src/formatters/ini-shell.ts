@@ -1,3 +1,9 @@
+import {
+  resolveManagedConfigInterval,
+  SURGE_STYLE_DEFAULT_RULES,
+  URL_TEST_INTERVAL_SEC,
+  URL_TEST_URL,
+} from '../core/constants.js'
 import type { ProxyNode } from '../core/types.js'
 import type { ClashExtras } from '../rules/merge.js'
 import type { UpdateIntervalMode } from '../subscription/types.js'
@@ -11,20 +17,20 @@ export function managedConfigHeader(
   updateInterval?: UpdateIntervalMode,
 ): string[] {
   if (!managedConfigUrl) return []
-  const intervalValue = updateInterval && updateInterval !== 'auto' ? updateInterval : 43200
+  const intervalValue = resolveManagedConfigInterval(updateInterval)
   return [`#!MANAGED-CONFIG ${managedConfigUrl} interval=${intervalValue} strict=false`, '']
 }
 
 export function surgeStyleRuleLines(extras?: ClashExtras): string[] {
   return extras?.rules?.length
     ? extras.rules.map((r) => r.replace(/^MATCH,/i, 'FINAL,'))
-    : ['GEOIP,CN,DIRECT', 'FINAL,PROXY']
+    : [...SURGE_STYLE_DEFAULT_RULES]
 }
 
 export function defaultSurgeStyleProxyGroups(names: string[]): string[] {
   return [
     `PROXY = select, AUTO, ${names.join(', ')}`,
-    `AUTO = url-test, ${names.join(', ')}, url=http://cp.cloudflare.com/generate_204, interval=300`,
+    `AUTO = url-test, ${names.join(', ')}, url=${URL_TEST_URL}, interval=${URL_TEST_INTERVAL_SEC}`,
   ]
 }
 

@@ -2,6 +2,7 @@ import { mkdir, readFile, writeFile, unlink } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { parse, stringify } from 'yaml'
 import type { RulesConfig, RulesInput, RulesMergeMode } from './types.js'
+import { RULE_GEOIP_CN_DIRECT, RULE_MATCH_PROXY } from '../core/constants.js'
 import { appDataDir } from '../utils/paths.js'
 
 function userRulesPath(): string {
@@ -10,8 +11,8 @@ function userRulesPath(): string {
 
 const DEFAULT_RULES_YAML = `rules-merge: replace
 rules:
-  - GEOIP,CN,DIRECT
-  - MATCH,PROXY
+  - ${RULE_GEOIP_CN_DIRECT}
+  - ${RULE_MATCH_PROXY}
 `
 
 function defaultRules(): RulesConfig {

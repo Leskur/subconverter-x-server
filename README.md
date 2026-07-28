@@ -112,6 +112,10 @@ scripts/
 └── sea-config.json # SEA 打包配置
 ```
 
+## 维护
+
+发版前检查见 [docs/release.md](docs/release.md)。
+
 ## License
 
 MIT
