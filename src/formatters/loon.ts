@@ -16,14 +16,17 @@ function ssLine(node: ShadowsocksProxy): string {
 }
 
 function vmessLine(node: VmessProxy): string {
-  const transport = node.network === 'ws' ? 'ws' : 'tcp'
+  const transport = node.network === 'ws' ? 'ws' : node.network === 'grpc' ? 'grpc' : 'tcp'
   const tls = node.tls ? 'true' : 'false'
   const parts = [
     `${node.name} = vmess,${node.server},${node.port},${node.cipher ?? 'aes-128-gcm'},"${node.uuid}"`,
     `transport=${transport}`,
   ]
-  if (node.path) parts.push(`path=${node.path}`)
-  if (node.host) parts.push(`host=${node.host}`)
+  if (node.network === 'grpc' && node.path) parts.push(`host=${node.path}`)
+  else {
+    if (node.path) parts.push(`path=${node.path}`)
+    if (node.host) parts.push(`host=${node.host}`)
+  }
   parts.push(`over-tls=${tls}`)
   if (node.sni) parts.push(`tls-name=${node.sni}`)
   if (node.tls) parts.push('skip-cert-verify=false')
@@ -31,16 +34,25 @@ function vmessLine(node: VmessProxy): string {
 }
 
 function vlessLine(node: VlessProxy): string {
-  const transport = node.network === 'ws' ? 'ws' : 'tcp'
+  const transport = node.network === 'ws' ? 'ws' : node.network === 'grpc' ? 'grpc' : 'tcp'
   const tls = node.security === 'tls' || node.security === 'reality' ? 'true' : 'false'
   const parts = [
     `${node.name} = VLESS,${node.server},${node.port},"${node.uuid}"`,
     `transport=${transport}`,
   ]
-  if (node.path) parts.push(`path=${node.path}`)
-  if (node.host) parts.push(`host=${node.host}`)
+  if (node.network === 'grpc' && (node.serviceName || node.path)) {
+    parts.push(`host=${node.serviceName || node.path}`)
+  } else {
+    if (node.path) parts.push(`path=${node.path}`)
+    if (node.host) parts.push(`host=${node.host}`)
+  }
   parts.push(`over-tls=${tls}`)
   if (node.sni) parts.push(`tls-name=${node.sni}`)
+  if (node.flow) parts.push(`flow=${node.flow}`)
+  if (node.security === 'reality') {
+    if (node.realityPublicKey) parts.push(`reality-public-key=${node.realityPublicKey}`)
+    if (node.realityShortId) parts.push(`reality-short-id=${node.realityShortId}`)
+  }
   return parts.join(',')
 }
 
@@ -50,6 +62,11 @@ function trojanLine(node: TrojanProxy): string {
     'skip-cert-verify=false',
   ]
   if (node.sni) parts.push(`tls-name=${node.sni}`)
+  if (node.network === 'ws') {
+    parts.push('transport=ws')
+    if (node.path) parts.push(`path=${node.path}`)
+    if (node.host) parts.push(`host=${node.host}`)
+  }
   return parts.join(',')
 }
 

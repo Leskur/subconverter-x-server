@@ -59,7 +59,7 @@ PUT  /api/subscription
 | loon | ✓ | ✓ | ✓ | ✓ | ✓ | |
 | quanx | ✓ | ✓ | ✓ | ✓ | ✓ | |
 
-> 当前 `surge` 与 `clash` 共用 Clash YAML 输出。
+> `surge`（含 Shadowrocket）输出 Surge INI；`clash` 输出 Clash YAML。
 
 ## 规则
 
@@ -101,7 +101,7 @@ src/
 ├── main.ts         # 启动入口
 ├── core/           # 摄入、解析、转换、格式分发、客户端能力表
 ├── parsers/        # 协议解析器（VLESS/VMess/SS/Trojan/Hysteria2）
-├── formatters/     # Clash · Surfboard · Loon · QuanX
+├── formatters/     # Clash · Surge · Surfboard · Loon · QuanX
 ├── routes/         # HTTP 路由 + OpenAPI 文档
 ├── rules/          # 规则存储与合并
 ├── config/         # 配置存储（token、订阅设置）

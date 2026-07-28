@@ -5,6 +5,7 @@ import { formatClashProxies } from '../formatters/clash.js'
 import { formatLoonProxies } from '../formatters/loon.js'
 import { formatQuanxProxies } from '../formatters/quanx.js'
 import { formatSurfboardProxies } from '../formatters/surfboard.js'
+import { formatSurgeProxies } from '../formatters/surge.js'
 
 import type { ClashExtras } from '../rules/merge.js'
 
@@ -23,10 +24,15 @@ export function formatProxies(
 
   switch (client) {
     case 'clash':
-    case 'surge':
       return {
         body: formatClashProxies(usable, extras?.clashExtras, updateInterval),
         contentType: 'application/yaml; charset=utf-8',
+        emittedCount: usable.length,
+      }
+    case 'surge':
+      return {
+        body: formatSurgeProxies(usable, managedConfigUrl, extras?.clashExtras, updateInterval),
+        contentType: 'text/plain; charset=utf-8',
         emittedCount: usable.length,
       }
     case 'surfboard':

@@ -16,7 +16,7 @@ const STANDARD: readonly ProxyType[] = [
  */
 export const CLIENT_CAPABILITIES: Record<ClientType, readonly ProxyType[]> = {
   clash: [...STANDARD, 'raw'],
-  // Surge / Shadowrocket：对齐常见 Surge 能力；输出仍走 Clash YAML 时也先按此裁剪
+  // Surge / Shadowrocket：官方不支持 VLESS；输出为 Surge INI
   surge: ['shadowsocks', 'trojan', 'vmess', 'hysteria2'],
   // Surfboard 对齐 Surge，暂不支持 VLESS
   surfboard: ['shadowsocks', 'trojan', 'vmess', 'hysteria2'],

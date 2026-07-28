@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { createMiddleware } from 'hono/factory'
-import { logRequest } from './utils/log.js'
+import { logAccess } from './utils/log.js'
 import { authMiddleware } from './middleware/auth.js'
 import adminRoutes from './routes/admin.js'
 import rulesRoutes from './routes/rules.js'
@@ -17,12 +17,17 @@ function corsOrigin(): string {
 function requestLogger() {
   return createMiddleware(async (c, next) => {
     const started = Date.now()
-    const method = c.req.method
-    const path = new URL(c.req.url).pathname
-    const ua = c.req.header('user-agent')
-    logRequest('request', { method, path, ua })
     await next()
-    logRequest('response', { path, status: c.res.status, latency: `${Date.now() - started}ms` })
+
+    const path = new URL(c.req.url).pathname
+    if (path === '/sub') return
+
+    logAccess({
+      method: c.req.method,
+      path,
+      status: c.res.status,
+      latency: `${Date.now() - started}ms`,
+    })
   })
 }
 

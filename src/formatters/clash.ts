@@ -15,21 +15,29 @@ function vlessProxy(node: VlessProxy): Record<string, unknown> {
   }
 
   if (node.flow) proxy['flow'] = node.flow
+  if (node.packetEncoding) proxy['packet-encoding'] = node.packetEncoding
   if (node.network) proxy['network'] = node.network
   if (node.security) proxy['tls'] = node.security === 'tls' || node.security === 'reality'
   if (node.sni) proxy['servername'] = node.sni
   if (node.fingerprint) proxy['client-fingerprint'] = node.fingerprint
   if (node.alpn) proxy['alpn'] = node.alpn.split(',')
-  if (node.host) proxy['ws-opts'] = { headers: { Host: node.host }, path: node.path || '/' }
+  if (node.network === 'ws') {
+    proxy['ws-opts'] = {
+      path: node.path || '/',
+      headers: node.host ? { Host: node.host } : undefined,
+    }
+  }
   if (node.network === 'grpc' && (node.serviceName || node.path)) {
     proxy['grpc-opts'] = { 'grpc-service-name': node.serviceName || node.path }
   }
-  if (node.security === 'reality') {
+  if (node.security === 'reality' && node.realityPublicKey) {
     proxy['tls'] = true
-    proxy['reality-opts'] = {
+    const realityOpts: Record<string, string> = {
       'public-key': node.realityPublicKey,
       'short-id': node.realityShortId || '',
     }
+    if (node.realitySpiderX) realityOpts['spider-x'] = node.realitySpiderX
+    proxy['reality-opts'] = realityOpts
   }
 
   return proxy
@@ -114,7 +122,7 @@ function trojanProxy(node: TrojanProxy): Record<string, unknown> {
   if (node.alpn) proxy['alpn'] = node.alpn.split(',')
   if (node.fingerprint) proxy['client-fingerprint'] = node.fingerprint
   if (node.network) proxy['network'] = node.network
-  if (node.host || node.path) {
+  if (node.network === 'ws' && (node.host || node.path)) {
     proxy['ws-opts'] = { path: node.path || '/', headers: node.host ? { Host: node.host } : undefined }
   }
 

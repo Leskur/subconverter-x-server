@@ -40,7 +40,7 @@
 | 值 | 客户端 |
 |---|---|
 | `clash` / `mihomo` / `clash.meta` / `meta` | Clash / Clash Meta / Mihomo |
-| `surge` / `shadowrocket` | Surge / Shadowrocket（当前输出为 Clash YAML） |
+| `surge` / `shadowrocket` | Surge / Shadowrocket（Surge INI） |
 | `surfboard` | Surfboard |
 | `loon` | Loon |
 | `quanx` / `quantumult` / `quantumult x` | Quantumult X |
@@ -48,8 +48,8 @@
 **响应**
 
 - **200**：转换后的配置内容，`Content-Type` 取决于目标格式
-  - Clash / Surge：`application/yaml; charset=utf-8`
-  - Surfboard / Loon / QuanX：`text/plain; charset=utf-8`
+  - Clash：`application/yaml; charset=utf-8`
+  - Surge / Surfboard / Loon / QuanX：`text/plain; charset=utf-8`
 - **400**：错误信息（JSON）
 - **405**：方法不允许
 
@@ -244,7 +244,7 @@ Token 来源：
 | ClientType | 输出格式 | 说明 |
 |---|---|---|
 | `clash` | YAML | Clash / Clash Meta / Mihomo |
-| `surge` | YAML | 当前与 Clash 共用 YAML 输出；Shadowrocket 也映射到此 |
+| `surge` | INI | Surge 配置格式；Shadowrocket 也映射到此 |
 | `surfboard` | INI | Surfboard |
 | `loon` | INI | Loon |
 | `quanx` | INI | Quantumult X |

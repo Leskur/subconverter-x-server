@@ -20,7 +20,11 @@ export function getOpenApiSpec(serverUrl: string): Record<string, unknown> {
           tags: ['订阅转换'],
           summary: '订阅转换',
           description:
-            '获取上游订阅并转换为目标客户端格式。若无法识别客户端类型且未传 target，后端将原样透传上游内容。',
+            '获取上游订阅并转换为目标客户端格式。若无法识别客户端类型且未传 target，后端将原样透传上游内容（text/plain）。\n\n' +
+            '**target / UA 与输出格式**\n' +
+            '- `clash` / `mihomo` / `clash.meta`：Clash YAML（`application/yaml`）\n' +
+            '- `surge` / `shadowrocket`：Surge INI（`text/plain`）\n' +
+            '- `surfboard` / `loon` / `quanx`：各客户端 INI（`text/plain`）',
           parameters: [
             {
               name: 'url',
@@ -33,7 +37,8 @@ export function getOpenApiSpec(serverUrl: string): Record<string, unknown> {
               name: 'target',
               in: 'query',
               required: false,
-              description: '强制指定目标客户端，优先级高于 UA 自动检测',
+              description:
+                '强制指定目标客户端，优先级高于 UA 自动检测。别名：`mihomo`、`clash.meta`、`shadowrocket`、`quantumult` 等见 docs/api.md。',
               schema: {
                 type: 'string',
                 enum: ['clash', 'surge', 'surfboard', 'loon', 'quanx'],
@@ -49,11 +54,17 @@ export function getOpenApiSpec(serverUrl: string): Record<string, unknown> {
           ],
           responses: {
             '200': {
-              description: '转换后的配置内容',
+              description:
+                '转换后的配置内容。Content-Type 取决于目标客户端：Clash 为 YAML，Surge / Surfboard / Loon / QuanX 为 INI；透传时为上游原文（text/plain）。',
               content: {
-                'application/yaml': { schema: { type: 'string' } },
-                'application/json': { schema: { type: 'string' } },
-                'text/plain': { schema: { type: 'string' } },
+                'application/yaml': {
+                  schema: { type: 'string' },
+                  example: 'proxies:\n  - name: example\n    type: ss\n    ...',
+                },
+                'text/plain': {
+                  schema: { type: 'string' },
+                  example: '[General]\nloglevel = notify\n\n[Proxy]\n...',
+                },
               },
             },
             '400': {
