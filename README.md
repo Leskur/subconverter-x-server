@@ -22,6 +22,9 @@ npm run dev      # 监听 :15500
 curl -fsSL https://raw.githubusercontent.com/Leskur/subconverter-x-server/main/install.sh | bash
 ```
 
+会安装为 systemd 用户服务：开机自启、断开会话后继续运行（通过 `loginctl enable-linger`）。  
+若自动开启 linger 失败，按脚本提示执行 `sudo loginctl enable-linger $USER`。
+
 卸载（会询问是否删除用户配置）：
 
 ```bash

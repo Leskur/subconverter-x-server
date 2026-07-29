@@ -44,10 +44,26 @@ After=network.target
 ExecStart=$BIN
 Environment=PORT=${PORT:-15500}
 Restart=always
+RestartSec=3
 
 [Install]
 WantedBy=default.target
 EOF
+
+# 允许用户级 systemd 在开机启动，并在登出后继续运行
+if command -v loginctl >/dev/null 2>&1; then
+  if loginctl show-user "$USER" -p Linger 2>/dev/null | grep -qx 'Linger=yes'; then
+    echo "🔁 已开启 linger，服务可开机自启"
+  elif loginctl enable-linger "$USER" 2>/dev/null; then
+    echo "🔁 已开启 linger，服务可开机自启并在登出后继续运行"
+  else
+    echo "⚠️  无法自动开启 linger。请手动执行："
+    echo "    sudo loginctl enable-linger $USER"
+    echo "   否则登出或重启后服务可能不会保持运行"
+  fi
+else
+  echo "⚠️  未找到 loginctl，开机自启可能不可用"
+fi
 
 # 启动
 systemctl --user daemon-reload
@@ -56,3 +72,4 @@ systemctl --user restart "$SERVICE"
 
 echo "✅ Done: http://0.0.0.0:${PORT:-15500}"
 echo "🔑 查看认证 Token: cat ~/.config/subconverter-x/config.yaml"
+echo "📋 服务状态: systemctl --user status $SERVICE"
