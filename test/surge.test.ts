@@ -66,7 +66,7 @@ describe('formatSurgeProxies', () => {
 
     assert.match(body, /^#!MANAGED-CONFIG https:\/\/example\.com\/sub interval=43200 strict=false/m)
     assert.match(body, /\[General\]/)
-    assert.match(body, /dns-server = system/)
+    assert.match(body, /dns-server = 223\.5\.5\.5, 119\.29\.29\.29/)
     assert.doesNotMatch(body, /enhanced-mode-by-rule/)
 
     assert.match(

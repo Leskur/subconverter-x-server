@@ -1,4 +1,6 @@
 import {
+  DEFAULT_DNS_SERVER,
+  DEFAULT_SKIP_PROXY,
   LOON_DEFAULT_RULES,
   resolveManagedConfigInterval,
   URL_TEST_INTERVAL_SEC,
@@ -13,6 +15,7 @@ import type {
   VmessProxy,
 } from '../core/types.js'
 import type { ClashExtras } from '../rules/merge.js'
+import type { OutputSettings } from '../output-settings/types.js'
 import type { UpdateIntervalMode } from '../subscription/types.js'
 
 function ssLine(node: ShadowsocksProxy): string {
@@ -98,7 +101,13 @@ function proxyLine(node: ProxyNode): string {
   }
 }
 
-export function formatLoonProxies(nodes: ProxyNode[], extras?: ClashExtras, managedConfigUrl?: string, updateInterval?: UpdateIntervalMode): string {
+export function formatLoonProxies(
+  nodes: ProxyNode[],
+  extras?: ClashExtras,
+  managedConfigUrl?: string,
+  updateInterval?: UpdateIntervalMode,
+  outputSettings?: OutputSettings,
+): string {
   const lines = nodes.map(proxyLine).filter(Boolean)
   const names = nodes.map((n) => n.name)
   const ruleLines = extras?.rules?.length
@@ -108,14 +117,22 @@ export function formatLoonProxies(nodes: ProxyNode[], extras?: ClashExtras, mana
   const header = managedConfigUrl
     ? [`#!MANAGED-CONFIG ${managedConfigUrl} interval=${intervalValue} strict=false`, '']
     : []
+  const url = outputSettings?.urlTestUrl ?? URL_TEST_URL
+  const testInterval = outputSettings?.urlTestInterval ?? URL_TEST_INTERVAL_SEC
+  const dnsServer = outputSettings?.dnsServer ?? DEFAULT_DNS_SERVER
+  const skipProxy = outputSettings?.skipProxy ?? DEFAULT_SKIP_PROXY
   return [
     ...header,
+    '[General]',
+    `dns-server = ${dnsServer}`,
+    `skip-proxy = ${skipProxy}`,
+    '',
     '[Proxy]',
     ...lines,
     '',
     '[Proxy Group]',
     `PROXY = select,AUTO,${names.join(',')}`,
-    `AUTO = url-test,${names.join(',')},url=${URL_TEST_URL},interval=${URL_TEST_INTERVAL_SEC}`,
+    `AUTO = url-test,${names.join(',')},url=${url},interval=${testInterval}`,
     '',
     '[Rule]',
     ...ruleLines,

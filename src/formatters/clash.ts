@@ -1,7 +1,10 @@
 import { stringify } from 'yaml'
 import type { ClashExtras } from '../rules/merge.js'
+import type { OutputSettings } from '../output-settings/types.js'
+import { parseDnsServers } from '../output-settings/apply.js'
 import type { UpdateIntervalMode } from '../subscription/types.js'
 import {
+  DEFAULT_DNS_SERVER,
   MANAGED_CONFIG_INTERVAL_SEC,
   URL_TEST_INTERVAL_SEC,
   URL_TEST_URL,
@@ -134,7 +137,12 @@ function trojanProxy(node: TrojanProxy): Record<string, unknown> {
   return proxy
 }
 
-export function formatClashProxies(nodes: ProxyNode[], extras?: ClashExtras, updateInterval?: UpdateIntervalMode): string {
+export function formatClashProxies(
+  nodes: ProxyNode[],
+  extras?: ClashExtras,
+  updateInterval?: UpdateIntervalMode,
+  outputSettings?: OutputSettings,
+): string {
   const proxies = nodes.map((node) => {
     switch (node.type) {
       case 'vless':
@@ -171,6 +179,19 @@ export function formatClashProxies(nodes: ProxyNode[], extras?: ClashExtras, upd
     return g
   }
 
+  const applyUrlTest = (group: unknown): unknown => {
+    if (!group || typeof group !== 'object') return group
+    const g = group as Record<string, unknown>
+    if (g['type'] !== 'url-test') return group
+    return {
+      ...g,
+      url: outputSettings?.urlTestUrl ?? (typeof g['url'] === 'string' ? g['url'] : URL_TEST_URL),
+      interval:
+        outputSettings?.urlTestInterval ??
+        (typeof g['interval'] === 'number' ? g['interval'] : URL_TEST_INTERVAL_SEC),
+    }
+  }
+
   const upstreamGroups = extras?.proxyGroups ?? []
   const upstreamNames = new Set(
     upstreamGroups
@@ -184,8 +205,8 @@ export function formatClashProxies(nodes: ProxyNode[], extras?: ClashExtras, upd
     defaultGroups.push({
       name: 'AUTO',
       type: 'url-test',
-      url: URL_TEST_URL,
-      interval: URL_TEST_INTERVAL_SEC,
+      url: outputSettings?.urlTestUrl ?? URL_TEST_URL,
+      interval: outputSettings?.urlTestInterval ?? URL_TEST_INTERVAL_SEC,
       proxies: nodeNames,
     })
   }
@@ -193,10 +214,27 @@ export function formatClashProxies(nodes: ProxyNode[], extras?: ClashExtras, upd
     defaultGroups.push({ name: 'PROXY', type: 'select', proxies: ['AUTO', ...nodeNames] })
   }
 
-  const groups = [...upstreamGroups.map(fillProxies), ...defaultGroups]
+  const groups = [...upstreamGroups.map((g) => applyUrlTest(fillProxies(g))), ...defaultGroups]
 
+  const topLevel = { ...(extras?.topLevel ?? {}) }
+  const existingDns =
+    topLevel.dns && typeof topLevel.dns === 'object' && !Array.isArray(topLevel.dns)
+      ? { ...(topLevel.dns as Record<string, unknown>) }
+      : {}
+  delete topLevel.dns
+
+  const nameserver = parseDnsServers(outputSettings?.dnsServer ?? DEFAULT_DNS_SERVER)
+  const dns =
+    nameserver.length > 0
+      ? { enable: true, ...existingDns, nameserver }
+      : Object.keys(existingDns).length > 0
+        ? existingDns
+        : undefined
+
+  // dns 放在通用顶层字段之后、proxies 之前，避免落到文件末尾
   const output: Record<string, unknown> = {
-    ...(extras?.topLevel ?? {}),
+    ...topLevel,
+    ...(dns ? { dns } : {}),
     proxies,
     'proxy-groups': groups,
   }

@@ -1,16 +1,16 @@
+import type { ProxyNode } from '../core/types.js'
+import type { ClashExtras } from '../rules/merge.js'
+import type { OutputSettings } from '../output-settings/types.js'
+import type { UpdateIntervalMode } from '../subscription/types.js'
 import {
+  DEFAULT_DNS_SERVER,
+  DEFAULT_SKIP_PROXY,
   resolveManagedConfigInterval,
   SURGE_STYLE_DEFAULT_RULES,
   URL_TEST_INTERVAL_SEC,
   URL_TEST_URL,
 } from '../core/constants.js'
-import type { ProxyNode } from '../core/types.js'
-import type { ClashExtras } from '../rules/merge.js'
-import type { UpdateIntervalMode } from '../subscription/types.js'
 import { surgeStyleProxyLine, type SurgeStyleTarget } from './surge-style-proxy.js'
-
-const SKIP_PROXY =
-  'skip-proxy = 127.0.0.1, 192.168.0.0/16, 10.0.0.0/8, 172.16.0.0/12, localhost, *.local'
 
 export function managedConfigHeader(
   managedConfigUrl?: string,
@@ -27,10 +27,15 @@ export function surgeStyleRuleLines(extras?: ClashExtras): string[] {
     : [...SURGE_STYLE_DEFAULT_RULES]
 }
 
-export function defaultSurgeStyleProxyGroups(names: string[]): string[] {
+export function defaultSurgeStyleProxyGroups(
+  names: string[],
+  settings?: Pick<OutputSettings, 'urlTestUrl' | 'urlTestInterval'>,
+): string[] {
+  const url = settings?.urlTestUrl ?? URL_TEST_URL
+  const interval = settings?.urlTestInterval ?? URL_TEST_INTERVAL_SEC
   return [
     `PROXY = select, AUTO, ${names.join(', ')}`,
-    `AUTO = url-test, ${names.join(', ')}, url=${URL_TEST_URL}, interval=${URL_TEST_INTERVAL_SEC}`,
+    `AUTO = url-test, ${names.join(', ')}, url=${url}, interval=${interval}`,
   ]
 }
 
@@ -41,6 +46,7 @@ export interface SurgeStyleIniOptions {
   managedConfigUrl?: string
   extras?: ClashExtras
   updateInterval?: UpdateIntervalMode
+  outputSettings?: OutputSettings
 }
 
 export function formatSurgeStyleIni(options: SurgeStyleIniOptions): string {
@@ -53,20 +59,27 @@ export function formatSurgeStyleIni(options: SurgeStyleIniOptions): string {
     names.push(node.name)
   }
 
+  const skipProxy = options.outputSettings?.skipProxy ?? DEFAULT_SKIP_PROXY
+
   return [
     ...managedConfigHeader(options.managedConfigUrl, options.updateInterval),
     '[General]',
     'loglevel = notify',
-    SKIP_PROXY,
+    surgeDnsServerLine(options.outputSettings),
+    `skip-proxy = ${skipProxy}`,
     ...options.generalLines,
     '',
     '[Proxy]',
     ...proxyLines,
     '',
     '[Proxy Group]',
-    ...defaultSurgeStyleProxyGroups(names),
+    ...defaultSurgeStyleProxyGroups(names, options.outputSettings),
     '',
     '[Rule]',
     ...surgeStyleRuleLines(options.extras),
   ].join('\n')
+}
+
+export function surgeDnsServerLine(settings?: Pick<OutputSettings, 'dnsServer'>): string {
+  return `dns-server = ${settings?.dnsServer ?? DEFAULT_DNS_SERVER}`
 }

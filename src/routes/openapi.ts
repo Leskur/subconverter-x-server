@@ -13,6 +13,7 @@ export function getOpenApiSpec(serverUrl: string): Record<string, unknown> {
       { name: '订阅转换', description: '上游订阅转换与输出' },
       { name: '系统', description: '健康检查、版本与管理元信息' },
       { name: '规则', description: '自定义规则与规则集管理' },
+      { name: '输出设置', description: '跨客户端通用输出默认值' },
     ],
     paths: {
       '/sub': {
@@ -418,6 +419,106 @@ export function getOpenApiSpec(serverUrl: string): Record<string, unknown> {
                     type: 'object',
                     properties: { error: { type: 'string' } },
                   },
+                },
+              },
+            },
+          },
+        },
+      },
+      '/api/output-settings': {
+        get: {
+          tags: ['输出设置'],
+          summary: '获取通用输出设置',
+          responses: {
+            '200': {
+              description: '当前通用输出设置',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      urlTestUrl: { type: 'string' },
+                      urlTestInterval: { type: 'number' },
+                      skipProxy: { type: 'string' },
+                      dnsServer: { type: 'string' },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        put: {
+          tags: ['输出设置'],
+          summary: '保存通用输出设置',
+          description: '需要认证。未支持的字段在对应客户端输出中会自动忽略。',
+          security: [{ bearerAuth: [] }],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    urlTestUrl: { type: 'string' },
+                    urlTestInterval: { type: 'number', minimum: 60 },
+                    skipProxy: { type: 'string' },
+                    dnsServer: { type: 'string' },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            '200': {
+              description: '保存后的设置',
+              content: {
+                'application/json': {
+                  schema: { type: 'object' },
+                },
+              },
+            },
+            '401': {
+              description: '未授权',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: { error: { type: 'string' } },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      '/api/output-settings/default': {
+        get: {
+          tags: ['输出设置'],
+          summary: '获取默认通用输出设置',
+          responses: {
+            '200': {
+              description: '内置默认值',
+              content: {
+                'application/json': {
+                  schema: { type: 'object' },
+                },
+              },
+            },
+          },
+        },
+      },
+      '/api/output-settings/reset': {
+        post: {
+          tags: ['输出设置'],
+          summary: '重置通用输出设置为默认值',
+          security: [{ bearerAuth: [] }],
+          responses: {
+            '200': {
+              description: '重置后的默认设置',
+              content: {
+                'application/json': {
+                  schema: { type: 'object' },
                 },
               },
             },

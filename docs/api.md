@@ -7,6 +7,7 @@
 - [管理元信息](#管理元信息)
 - [自定义规则](#自定义规则)
 - [自定义规则集](#自定义规则集)
+- [通用输出设置](#通用输出设置)
 - [认证](#认证)
 - [支持的客户端](#支持的客户端)
 - [客户端 × 协议能力](#客户端--协议能力)
@@ -222,9 +223,50 @@ curl "http://localhost:15500/sub?url=https://example.com/sub&target=surfboard"
 
 ---
 
+## 通用输出设置
+
+跨客户端共享的输出默认值，存储在 `output-settings.yaml`。  
+未支持该字段的客户端会自动忽略。订阅自动更新间隔仍使用 `/api/subscription`。
+
+### `GET /api/output-settings`
+
+获取当前设置。
+
+**响应示例**
+
+```json
+{
+  "urlTestUrl": "http://cp.cloudflare.com/generate_204",
+  "urlTestInterval": 300,
+  "skipProxy": "127.0.0.1, 192.168.0.0/16, 10.0.0.0/8, 172.16.0.0/12, localhost, *.local",
+  "dnsServer": "223.5.5.5, 119.29.29.29"
+}
+```
+
+| 字段 | 说明 | 主要生效客户端 |
+|---|---|---|
+| `urlTestUrl` | AUTO 组测速地址 | Clash / Surge / Surfboard / Loon / QuanX |
+| `urlTestInterval` | 测速间隔（秒，≥60） | 同上 |
+| `skipProxy` | 绕过列表（Surge/Surfboard/Loon: skip-proxy；QuanX: excluded_routes，仅 CIDR） | Surge / Surfboard / Loon / QuanX |
+| `dnsServer` | DNS 服务器（默认阿里 + 腾讯） | Clash nameserver / QuanX `[dns]` / 其余 `dns-server` |
+
+### `PUT /api/output-settings`
+
+部分更新设置。**需要认证**。
+
+### `GET /api/output-settings/default`
+
+获取内置默认值。
+
+### `POST /api/output-settings/reset`
+
+删除用户配置并恢复默认。**需要认证**。
+
+---
+
 ## 认证
 
-管理写接口（`PUT` / `POST`，如规则、规则集、订阅设置）需要：
+管理写接口（`PUT` / `POST`，如规则、规则集、订阅设置、输出设置）需要：
 
 ```
 Authorization: Bearer <token>

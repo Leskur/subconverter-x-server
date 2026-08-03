@@ -7,6 +7,7 @@ import { resolveClient } from './client.js'
 import { resolveClashExtras } from '../rules/merge.js'
 import { expandRulesetRefs } from '../rules/ruleset.js'
 import { rulesStore } from '../rules/store.js'
+import { outputSettingsStore } from '../output-settings/store.js'
 import { subscriptionStore } from '../subscription/store.js'
 import { templateStore } from './templates.js'
 
@@ -138,6 +139,7 @@ export async function convertSubscription(
     proxyGroupsSource = 'upstream'
   }
   extras.clashExtras = resolveClashExtras(rulesConfig, { proxyGroups: resolvedProxyGroups, rules, topLevel: resolvedTopLevel })
+  extras.outputSettings = await outputSettingsStore.get()
 
   const subConfig = await subscriptionStore.get()
   const updateInterval = subConfig.updateInterval

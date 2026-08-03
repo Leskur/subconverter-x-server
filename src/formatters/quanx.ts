@@ -7,6 +7,14 @@ import type {
   VmessProxy,
 } from '../core/types.js'
 import type { ClashExtras } from '../rules/merge.js'
+import type { OutputSettings } from '../output-settings/types.js'
+import { parseDnsServers, skipProxyToCidrs } from '../output-settings/apply.js'
+import {
+  DEFAULT_DNS_SERVER,
+  DEFAULT_SKIP_PROXY,
+  URL_TEST_INTERVAL_SEC,
+  URL_TEST_URL,
+} from '../core/constants.js'
 
 function ssLine(node: ShadowsocksProxy): string {
   return `shadowsocks=${node.server}:${node.port}, method=${node.method}, password=${node.password}, udp-relay=true, tag=${node.name}`
@@ -106,19 +114,39 @@ function toQuanxRule(rule: string): string {
   return rule
 }
 
-export function formatQuanxProxies(nodes: ProxyNode[], extras?: ClashExtras): string {
+export function formatQuanxProxies(
+  nodes: ProxyNode[],
+  extras?: ClashExtras,
+  outputSettings?: OutputSettings,
+): string {
   const lines = nodes.map(proxyLine).filter(Boolean)
   const tags = nodes.map((n) => n.name)
   const ruleLines = extras?.rules?.length
     ? extras.rules.map(toQuanxRule)
     : ['final, PROXY']
+  const url = outputSettings?.urlTestUrl ?? URL_TEST_URL
+  const interval = outputSettings?.urlTestInterval ?? URL_TEST_INTERVAL_SEC
+  const dnsServers = parseDnsServers(outputSettings?.dnsServer ?? DEFAULT_DNS_SERVER)
+  const excluded = skipProxyToCidrs(outputSettings?.skipProxy ?? DEFAULT_SKIP_PROXY)
+
+  const general: string[] = ['[general]', `server_check_url=${url}`]
+  if (excluded.length > 0) {
+    general.push(`excluded_routes=${excluded.join(', ')}`)
+  }
+
+  const dns: string[] = ['[dns]', ...dnsServers.map((s) => `server = ${s}`)]
+
   return [
+    ...general,
+    '',
+    ...dns,
+    '',
     '[server_local]',
     ...lines,
     '',
     '[policy]',
     `static=PROXY, AUTO, ${tags.join(', ')}, img-url=https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Proxy.png`,
-    `url-latency-benchmark=AUTO, server-tag-regex=.*, check-interval=600, tolerance=0, img-url=https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Auto.png`,
+    `url-latency-benchmark=AUTO, server-tag-regex=.*, check-interval=${interval}, tolerance=0, img-url=https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Auto.png`,
     '',
     '[filter_local]',
     ...ruleLines,

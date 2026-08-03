@@ -6,6 +6,7 @@ import { authMiddleware } from './middleware/auth.js'
 import adminRoutes from './routes/admin.js'
 import rulesRoutes from './routes/rules.js'
 import rulesetsRoutes from './routes/rulesets.js'
+import outputSettingsRoutes from './routes/output-settings.js'
 import subRoutes from './routes/sub.js'
 import subscriptionRoutes from './routes/subscription.js'
 import systemRoutes from './routes/system.js'
@@ -52,12 +53,14 @@ function requireAuth(c: Parameters<Parameters<typeof app.use>[1]>[0], next: () =
 app.use('/api/rules', requireAuth)
 app.use('/api/rulesets', requireAuth)
 app.use('/api/subscription', requireAuth)
+app.use('/api/output-settings', requireAuth)
 
 app.route('/', systemRoutes)
 app.route('/api/admin', adminRoutes)
 app.route('/api/rules', rulesRoutes)
 app.route('/api/rulesets', rulesetsRoutes)
 app.route('/api/subscription', subscriptionRoutes)
+app.route('/api/output-settings', outputSettingsRoutes)
 app.route('/sub', subRoutes)
 
 app.all('/api/profiles/*', (c) => c.json({ error: 'Profiles API removed. Use GET/PUT /api/rules' }, 410))
