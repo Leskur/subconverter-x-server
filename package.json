@@ -1,6 +1,6 @@
 {
   "name": "subconverter-x-server",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "轻量订阅解析与转换引擎，支持单文件部署",
   "type": "module",
   "engines": {
