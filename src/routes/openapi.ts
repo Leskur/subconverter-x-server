@@ -10,7 +10,7 @@ export function getOpenApiSpec(serverUrl: string): Record<string, unknown> {
     },
     servers: [{ url: serverUrl }],
     tags: [
-      { name: '订阅转换', description: '上游订阅转换与输出' },
+      { name: '订阅转换', description: '订阅链接转换与输出' },
       { name: '系统', description: '健康检查、版本与管理元信息' },
       { name: '规则', description: '自定义规则与规则集管理' },
       { name: '输出设置', description: '跨客户端通用输出默认值' },
@@ -21,7 +21,7 @@ export function getOpenApiSpec(serverUrl: string): Record<string, unknown> {
           tags: ['订阅转换'],
           summary: '订阅转换',
           description:
-            '获取上游订阅并转换为目标客户端格式。若无法识别客户端类型且未传 target，后端将原样透传上游内容（text/plain）。\n\n' +
+            '获取订阅链接并转换为目标客户端格式。若无法识别客户端类型且未传 target，后端将原样透传订阅链接内容（text/plain）。\n\n' +
             '**target 与输出格式**\n' +
             '- `clash` / `mihomo` / `clash.meta`：Clash YAML（`application/yaml`）\n' +
             '- `surge` / `shadowrocket`：Surge INI（`text/plain`）\n' +
@@ -31,7 +31,7 @@ export function getOpenApiSpec(serverUrl: string): Record<string, unknown> {
               name: 'url',
               in: 'query',
               required: true,
-              description: '上游订阅链接',
+              description: '订阅链接',
               schema: { type: 'string' },
             },
             {
@@ -49,7 +49,7 @@ export function getOpenApiSpec(serverUrl: string): Record<string, unknown> {
           responses: {
             '200': {
               description:
-                '转换后的配置内容。Content-Type 取决于目标客户端：Clash 为 YAML，Surge / Surfboard / Loon / QuanX 为 INI；透传时为上游原文（text/plain）。',
+                '转换后的配置内容。Content-Type 取决于目标客户端：Clash 为 YAML，Surge / Surfboard / Loon / QuanX 为 INI；透传时为订阅链接原文（text/plain）。',
               content: {
                 'application/yaml': {
                   schema: { type: 'string' },

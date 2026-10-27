@@ -43,16 +43,16 @@ export function tryDecodeBase64(input: string): string | null {
   }
 }
 
-export function assertSafeUpstreamUrl(rawUrl: string): URL {
+export function assertSafeSubscriptionUrl(rawUrl: string): URL {
   let url: URL
   try {
     url = new URL(rawUrl)
   } catch {
-    throw new Error('Invalid upstream URL')
+    throw new Error('Invalid subscription URL')
   }
 
   if (!['http:', 'https:'].includes(url.protocol)) {
-    throw new Error('Upstream URL must use http or https')
+    throw new Error('Subscription URL must use http or https')
   }
 
   return url

@@ -1,21 +1,24 @@
-import { assertSafeUpstreamUrl } from '../utils/uri.js'
-import { buildUpstreamHeaders } from '../utils/headers.js'
+import { assertSafeSubscriptionUrl } from '../utils/uri.js'
+import { buildFetchHeaders } from '../utils/headers.js'
 
 export interface IngestOptions {
   fetchImpl?: typeof fetch
   timeoutMs?: number
-  requestHeaders?: Headers
-  overrideUserAgent?: string
+  /** 客户端 → 本服务 的入站头，转发时会过滤 hop-by-hop */
+  incomingHeaders?: Headers
+  /** 本服务拉取订阅链接时使用的 User-Agent（覆盖入站 UA） */
+  fetchUserAgent?: string
 }
 
-export async function fetchUpstream(
+/** 实际 HTTP GET 订阅链接正文 */
+async function fetchSubscription(
   rawUrl: string,
   options: IngestOptions = {},
 ): Promise<string> {
-  const url = assertSafeUpstreamUrl(rawUrl)
+  const url = assertSafeSubscriptionUrl(rawUrl)
   const fetchImpl = options.fetchImpl ?? fetch
   const timeoutMs = options.timeoutMs ?? 15_000
-  const headers = buildUpstreamHeaders(options.requestHeaders, options.overrideUserAgent)
+  const headers = buildFetchHeaders(options.incomingHeaders, options.fetchUserAgent)
 
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), timeoutMs)
@@ -27,7 +30,7 @@ export async function fetchUpstream(
     })
 
     if (!response.ok) {
-      throw new Error(`Upstream responded with ${response.status}`)
+      throw new Error(`Subscription responded with ${response.status}`)
     }
 
     return await response.text()
@@ -36,9 +39,10 @@ export async function fetchUpstream(
   }
 }
 
+/** 拉取订阅链接正文（可覆盖拉取时的 UA） */
 export async function ingestSubscription(
   rawUrl: string,
   options: IngestOptions = {},
 ): Promise<string> {
-  return fetchUpstream(rawUrl, options)
+  return fetchSubscription(rawUrl, options)
 }

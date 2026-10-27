@@ -1,6 +1,6 @@
 # subconverter-x-server
 
-轻量的订阅转换中间层。拉取上游订阅、解析多种协议，按客户端类型输出对应格式。
+轻量的订阅转换中间层。拉取订阅链接、解析多种协议，按客户端类型输出对应格式。
 
 **协议**：VLESS（Reality）、VMess、Shadowsocks、Trojan、Hysteria2  
 **输出格式**：Clash/Mihomo（YAML）· Surge/Shadowrocket（INI）· Surfboard（INI）· Loon（INI）· Quantumult X（INI）
@@ -43,7 +43,7 @@ curl "http://localhost:15500/sub?url=https://example.com/sub&target=surge"
 ```
 
 `target` 可选值：`clash` · `surge` · `surfboard` · `loon` · `quanx`。  
-不传时按 `User-Agent` 自动识别；无法识别时原样透传上游内容。
+不传时按 `User-Agent` 自动识别；无法识别时原样透传订阅链接内容。
 
 ## 文档
 

@@ -192,16 +192,16 @@ export function formatClashProxies(
     }
   }
 
-  const upstreamGroups = extras?.proxyGroups ?? []
-  const upstreamNames = new Set(
-    upstreamGroups
+  const subscriptionGroups = extras?.proxyGroups ?? []
+  const subscriptionGroupNames = new Set(
+    subscriptionGroups
       .filter((g): g is Record<string, unknown> => !!g && typeof g === 'object')
       .map((g) => g['name'])
       .filter((n): n is string => typeof n === 'string'),
   )
 
   const defaultGroups: unknown[] = []
-  if (!upstreamNames.has('AUTO')) {
+  if (!subscriptionGroupNames.has('AUTO')) {
     defaultGroups.push({
       name: 'AUTO',
       type: 'url-test',
@@ -210,11 +210,11 @@ export function formatClashProxies(
       proxies: nodeNames,
     })
   }
-  if (!upstreamNames.has('PROXY')) {
+  if (!subscriptionGroupNames.has('PROXY')) {
     defaultGroups.push({ name: 'PROXY', type: 'select', proxies: ['AUTO', ...nodeNames] })
   }
 
-  const groups = [...upstreamGroups.map((g) => applyUrlTest(fillProxies(g))), ...defaultGroups]
+  const groups = [...subscriptionGroups.map((g) => applyUrlTest(fillProxies(g))), ...defaultGroups]
 
   const topLevel = { ...(extras?.topLevel ?? {}) }
   const existingDns =

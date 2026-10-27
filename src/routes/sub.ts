@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { convertSubscription, fetchRawSubscription } from '../core/convert.js'
-import { resolveClientOrNull } from '../core/client.js'
+import { detectOutputClient } from '../core/client.js'
 import { logSubAccess } from '../utils/sub-log.js'
 
 const app = new Hono()
@@ -8,19 +8,23 @@ const app = new Hono()
 app.get('/', async (c) => {
   const started = Date.now()
   const userAgent = c.req.header('user-agent') ?? undefined
-  const upstreamUrl = c.req.query('url')
-  const forceClient = c.req.query('target') ?? undefined
+  const subscriptionUrl = c.req.query('url')
+  const target = c.req.query('target') ?? undefined
 
-  if (!upstreamUrl) {
+  if (!subscriptionUrl) {
     logSubAccess(c, started, 400, { error: 'missing url' })
     return c.json({ error: 'Missing required query parameter: url' }, 400)
   }
 
-  const client = resolveClientOrNull(userAgent, forceClient)
+  // 输出客户端：优先 target，否则从 User-Agent 识别；认不出则透传
+  const outputClient = detectOutputClient(userAgent, target)
 
-  if (!client) {
+  if (!outputClient) {
     try {
-      const raw = await fetchRawSubscription({ upstreamUrl, requestHeaders: new Headers(c.req.raw.headers) })
+      const raw = await fetchRawSubscription({
+        subscriptionUrl,
+        incomingHeaders: new Headers(c.req.raw.headers),
+      })
       logSubAccess(c, started, 200, { mode: 'passthrough', bytes: raw.length })
       return c.text(raw, 200, { 'Content-Type': 'text/plain; charset=utf-8' })
     } catch (error) {
@@ -32,9 +36,9 @@ app.get('/', async (c) => {
 
   try {
     const result = await convertSubscription({
-      upstreamUrl,
-      requestHeaders: new Headers(c.req.raw.headers),
-      forceClient: client,
+      subscriptionUrl,
+      incomingHeaders: new Headers(c.req.raw.headers),
+      outputClient,
       managedConfigUrl: c.req.url,
     })
     logSubAccess(c, started, 200, {
@@ -49,7 +53,7 @@ app.get('/', async (c) => {
     return c.body(result.body, 200, { 'Content-Type': result.contentType })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Conversion failed'
-    logSubAccess(c, started, 400, { client, error: message })
+    logSubAccess(c, started, 400, { client: outputClient, error: message })
     return c.json({ error: message }, 400)
   }
 })

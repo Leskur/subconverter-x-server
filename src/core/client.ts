@@ -15,13 +15,15 @@ const CLIENT_ALIASES: Record<string, ClientType> = {
   'quantumult x': 'quanx',
 }
 
-export function normalizeClient(value: string | undefined): ClientType | null {
+/** 解析 target 等别名（clash.meta → clash） */
+export function parseClientAlias(value: string | undefined): ClientType | null {
   if (!value) return null
   const key = value.trim().toLowerCase()
   return CLIENT_ALIASES[key] ?? null
 }
 
-export function detectClientFromUserAgent(userAgent: string | undefined): ClientType | null {
+/** 从 User-Agent 猜测输出客户端 */
+export function detectClientFromUa(userAgent: string | undefined): ClientType | null {
   if (!userAgent) return null
   const ua = userAgent.toLowerCase()
 
@@ -48,17 +50,19 @@ export function detectClientFromUserAgent(userAgent: string | undefined): Client
   return null
 }
 
-export function resolveClient(
+/** 解析输出客户端；找不到时用 fallback */
+export function resolveOutputClient(
   userAgent: string | undefined,
-  forceClient: string | undefined,
+  targetOrClient: string | undefined,
   fallback: ClientType = 'clash',
 ): ClientType {
-  return normalizeClient(forceClient) ?? detectClientFromUserAgent(userAgent) ?? fallback
+  return parseClientAlias(targetOrClient) ?? detectClientFromUa(userAgent) ?? fallback
 }
 
-export function resolveClientOrNull(
+/** 解析输出客户端；找不到返回 null（用于透传） */
+export function detectOutputClient(
   userAgent: string | undefined,
-  forceClient: string | undefined,
+  targetOrClient: string | undefined,
 ): ClientType | null {
-  return normalizeClient(forceClient) ?? detectClientFromUserAgent(userAgent)
+  return parseClientAlias(targetOrClient) ?? detectClientFromUa(userAgent)
 }

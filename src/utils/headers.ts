@@ -11,9 +11,10 @@ const HOP_BY_HOP_HEADERS = new Set([
   'content-length',
 ])
 
-export function buildUpstreamHeaders(
+/** 由入站头组装「拉取订阅链接」时的请求头；可指定 fetchUserAgent 覆盖 UA */
+export function buildFetchHeaders(
   incoming?: Headers,
-  overrideUserAgent?: string,
+  fetchUserAgent?: string,
 ): Record<string, string> {
   const headers: Record<string, string> = {}
 
@@ -24,11 +25,11 @@ export function buildUpstreamHeaders(
     })
   }
 
-  if (overrideUserAgent) {
+  if (fetchUserAgent) {
     for (const key of Object.keys(headers)) {
       if (key.toLowerCase() === 'user-agent') delete headers[key]
     }
-    headers['User-Agent'] = overrideUserAgent
+    headers['User-Agent'] = fetchUserAgent
   }
 
   if (!Object.keys(headers).some((key) => key.toLowerCase() === 'accept')) {

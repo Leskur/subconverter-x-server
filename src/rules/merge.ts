@@ -28,17 +28,17 @@ export function normalizeMergedRules(rules: string[]): string[] {
 
 export function mergeRules(
   custom: string[],
-  upstream: string[] | undefined,
+  subscription: string[] | undefined,
   mode: RulesMergeMode,
 ): string[] | undefined {
-  if (custom.length === 0) return upstream
-  if (!upstream?.length) return custom
+  if (custom.length === 0) return subscription
+  if (!subscription?.length) return custom
 
   switch (mode) {
     case 'prepend':
-      return normalizeMergedRules([...custom, ...upstream])
+      return normalizeMergedRules([...custom, ...subscription])
     case 'append':
-      return normalizeMergedRules([...upstream, ...custom])
+      return normalizeMergedRules([...subscription, ...custom])
     case 'replace':
     default:
       return custom
@@ -47,13 +47,13 @@ export function mergeRules(
 
 export function resolveClashExtras(
   rulesConfig: RulesConfig | null | undefined,
-  upstream?: ClashExtras,
+  subscription?: ClashExtras,
 ): ClashExtras {
   return {
-    proxyGroups: upstream?.proxyGroups,
+    proxyGroups: subscription?.proxyGroups,
     rules: rulesConfig
-      ? mergeRules(rulesConfig.rules, upstream?.rules, rulesConfig.rulesMerge)
-      : upstream?.rules,
-    topLevel: upstream?.topLevel,
+      ? mergeRules(rulesConfig.rules, subscription?.rules, rulesConfig.rulesMerge)
+      : subscription?.rules,
+    topLevel: subscription?.topLevel,
   }
 }

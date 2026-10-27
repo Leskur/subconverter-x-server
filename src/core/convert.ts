@@ -3,7 +3,7 @@ import type { ConvertInput, ConvertResult } from './types.js'
 import { formatProxies, type FormatExtras } from './format.js'
 import { ingestSubscription, type IngestOptions } from './ingest.js'
 import { parseSubscription } from './parse.js'
-import { resolveClient } from './client.js'
+import { resolveOutputClient } from './client.js'
 import { resolveClashExtras } from '../rules/merge.js'
 import { expandRulesetRefs } from '../rules/ruleset.js'
 import { rulesStore } from '../rules/store.js'
@@ -36,13 +36,11 @@ async function loadClashTemplate(): Promise<ClashTemplateExtras> {
 }
 
 export interface ConvertOptions extends IngestOptions {
-  defaultClient?: ConvertInput['forceClient']
-  fallbackUserAgent?: string
+  defaultClient?: ConvertInput['outputClient']
 }
 
-const DEFAULT_FALLBACK_USER_AGENT = 'clash-verge/v2.5.1'
-
-const CLIENT_UA: Record<string, string> = {
+/** 按输出客户端预设的拉取 UA（部分订阅按 UA 返回不同内容） */
+const FETCH_UA_BY_CLIENT: Record<string, string> = {
   clash: 'ClashforWindows/0.20.39',
   surge: 'Surge/2024',
   surfboard: 'Surfboard/2.4',
@@ -50,18 +48,20 @@ const CLIENT_UA: Record<string, string> = {
   quanx: 'Quantumult%20X/1.0.30',
 }
 
+const BROWSER_FETCH_UA = 'clash-verge/v2.5.1'
+
 function isBrowserUserAgent(userAgent: string | undefined): boolean {
   return !!userAgent && /mozilla\//i.test(userAgent)
 }
 
-
+/** 仅透传：拉取订阅链接原文，不改 UA、不解析、不转换 */
 export async function fetchRawSubscription(
-  input: Pick<ConvertInput, 'upstreamUrl' | 'requestHeaders'>,
+  input: Pick<ConvertInput, 'subscriptionUrl' | 'incomingHeaders'>,
   options: ConvertOptions = {},
 ): Promise<string> {
-  return ingestSubscription(input.upstreamUrl, {
+  return ingestSubscription(input.subscriptionUrl, {
     ...options,
-    requestHeaders: input.requestHeaders,
+    incomingHeaders: input.incomingHeaders,
   })
 }
 
@@ -69,37 +69,32 @@ export async function convertSubscription(
   input: ConvertInput,
   options: ConvertOptions = {},
 ): Promise<ConvertResult> {
-  const userAgent = input.requestHeaders?.get('user-agent') ?? undefined
+  const userAgent = input.incomingHeaders?.get('user-agent') ?? undefined
 
-  const overrideUa = isBrowserUserAgent(userAgent) ? 'clash-verge/v2.5.1' : undefined
-  const body = await ingestSubscription(input.upstreamUrl, {
+  // 浏览器 UA 拉订阅常得到空/网页；先换成通用客户端 UA
+  const browserFetchUa = isBrowserUserAgent(userAgent) ? BROWSER_FETCH_UA : undefined
+  const body = await ingestSubscription(input.subscriptionUrl, {
     ...options,
-    requestHeaders: input.requestHeaders,
-    overrideUserAgent: overrideUa,
+    incomingHeaders: input.incomingHeaders,
+    fetchUserAgent: browserFetchUa,
   })
   let { format, nodes, proxyGroups, rules, topLevel } = parseSubscription(body)
 
-  // Retry strategy: if upstream returned 0 nodes, try again with a different UA.
-  // 1. Client retry: use a known UA for the target client (e.g. Clash, Surge).
-  //    This handles airports that require a specific client UA to return YAML.
-  // 2. Fallback retry: if no client-specific UA applies, use a generic clash.meta UA.
-  //    Skipped if the original UA is already a browser UA (already overridden above).
-  const needsClientRetry =
-    nodes.length === 0 && input.forceClient && CLIENT_UA[input.forceClient]
-  const fallbackUa = options.fallbackUserAgent ?? DEFAULT_FALLBACK_USER_AGENT
-  const needsFallbackRetry =
+  // 0 节点时：用输出客户端的预设 UA 再拉一次（与第一次实际使用的 UA 相同时跳过）
+  const usedFetchUa = browserFetchUa ?? userAgent
+  const clientFetchUa = input.outputClient ? FETCH_UA_BY_CLIENT[input.outputClient] : undefined
+  const retryFetchUa =
     nodes.length === 0 &&
-    !needsClientRetry &&
-    !isBrowserUserAgent(userAgent) &&
-    fallbackUa.toLowerCase() !== userAgent?.toLowerCase()
+    clientFetchUa &&
+    clientFetchUa.toLowerCase() !== usedFetchUa?.toLowerCase()
+      ? clientFetchUa
+      : null
 
-  const retryUa = needsClientRetry ? CLIENT_UA[input.forceClient!] : needsFallbackRetry ? fallbackUa : null
-
-  if (retryUa) {
-    const retryBody = await ingestSubscription(input.upstreamUrl, {
+  if (retryFetchUa) {
+    const retryBody = await ingestSubscription(input.subscriptionUrl, {
       ...options,
-      requestHeaders: input.requestHeaders,
-      overrideUserAgent: retryUa,
+      incomingHeaders: input.incomingHeaders,
+      fetchUserAgent: retryFetchUa,
     })
     const retry = parseSubscription(retryBody)
 
@@ -113,13 +108,13 @@ export async function convertSubscription(
   }
 
   if (nodes.length === 0) {
-    throw new Error('No supported proxy nodes found in upstream subscription')
+    throw new Error('No supported proxy nodes found in subscription')
   }
 
-  const client = resolveClient(userAgent, input.forceClient, options.defaultClient ?? 'clash')
+  const client = resolveOutputClient(userAgent, input.outputClient, options.defaultClient ?? 'clash')
 
   const extras: FormatExtras = {}
-  let proxyGroupsSource: 'upstream' | 'template' | undefined
+  let proxyGroupsSource: 'subscription' | 'template' | undefined
   const rulesConfig = await rulesStore.get()
   if (rulesConfig?.rules) {
     rulesConfig.rules = await expandRulesetRefs(rulesConfig.rules)
@@ -133,10 +128,10 @@ export async function convertSubscription(
       resolvedProxyGroups = tmpl.proxyGroups
       proxyGroupsSource = 'template'
     } else {
-      proxyGroupsSource = 'upstream'
+      proxyGroupsSource = 'subscription'
     }
   } else {
-    proxyGroupsSource = 'upstream'
+    proxyGroupsSource = 'subscription'
   }
   extras.clashExtras = resolveClashExtras(rulesConfig, { proxyGroups: resolvedProxyGroups, rules, topLevel: resolvedTopLevel })
   extras.outputSettings = await outputSettingsStore.get()

@@ -82,9 +82,13 @@ export interface RawProxy extends BaseProxy {
 export type ProxyNode = VlessProxy | ShadowsocksProxy | TrojanProxy | VmessProxy | Hysteria2Proxy | RawProxy
 
 export interface ConvertInput {
-  upstreamUrl: string
-  requestHeaders?: Headers
-  forceClient?: ClientType
+  /** 待转换的订阅链接（通常来自机场） */
+  subscriptionUrl: string
+  /** 客户端 → 本服务 的入站请求头（识别 UA + 转发拉取订阅） */
+  incomingHeaders?: Headers
+  /** 最终输出格式对应的客户端 */
+  outputClient?: ClientType
+  /** 写入 #!MANAGED-CONFIG 的自身订阅 URL（转换后的订阅链接） */
   managedConfigUrl?: string
 }
 
@@ -92,12 +96,12 @@ export interface ConvertResult {
   body: string
   contentType: string
   client: ClientType
-  /** 上游解析到的节点数 */
+  /** 从订阅链接解析到的节点数 */
   nodeCount: number
   /** 按客户端能力过滤后实际输出的节点数 */
   emittedCount: number
   format?: string
-  proxyGroupsSource?: 'upstream' | 'template'
+  proxyGroupsSource?: 'subscription' | 'template'
   proxyGroupCount?: number
   ruleCount?: number
 }

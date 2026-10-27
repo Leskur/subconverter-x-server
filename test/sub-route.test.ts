@@ -21,7 +21,7 @@ describe('GET /sub', () => {
     globalThis.fetch = async () => new Response('raw-subscription-body', { status: 200 })
 
     const res = await app.fetch(
-      new Request('http://localhost/sub?url=http%3A%2F%2Fupstream.local%2Fsub', {
+      new Request('http://localhost/sub?url=http%3A%2F%2Fsource.local%2Fsub', {
         headers: { 'user-agent': 'curl/8.0.1' },
       }),
     )
@@ -36,7 +36,7 @@ describe('GET /sub', () => {
       new Response('ss://aes-128-gcm:password@example.com:8388#SS-Node', { status: 200 })
 
     const res = await app.fetch(
-      new Request('http://localhost/sub?url=http%3A%2F%2Fupstream.local%2Fsub&target=clash'),
+      new Request('http://localhost/sub?url=http%3A%2F%2Fsource.local%2Fsub&target=clash'),
     )
 
     assert.equal(res.status, 200)
