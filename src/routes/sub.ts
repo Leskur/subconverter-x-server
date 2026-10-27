@@ -9,7 +9,7 @@ app.get('/', async (c) => {
   const started = Date.now()
   const userAgent = c.req.header('user-agent') ?? undefined
   const upstreamUrl = c.req.query('url')
-  const forceClient = c.req.query('target') ?? c.req.query('ua') ?? undefined
+  const forceClient = c.req.query('target') ?? undefined
 
   if (!upstreamUrl) {
     logSubAccess(c, started, 400, { error: 'missing url' })

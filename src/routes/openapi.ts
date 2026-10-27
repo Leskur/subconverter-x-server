@@ -22,7 +22,7 @@ export function getOpenApiSpec(serverUrl: string): Record<string, unknown> {
           summary: '订阅转换',
           description:
             '获取上游订阅并转换为目标客户端格式。若无法识别客户端类型且未传 target，后端将原样透传上游内容（text/plain）。\n\n' +
-            '**target / UA 与输出格式**\n' +
+            '**target 与输出格式**\n' +
             '- `clash` / `mihomo` / `clash.meta`：Clash YAML（`application/yaml`）\n' +
             '- `surge` / `shadowrocket`：Surge INI（`text/plain`）\n' +
             '- `surfboard` / `loon` / `quanx`：各客户端 INI（`text/plain`）',
@@ -39,18 +39,11 @@ export function getOpenApiSpec(serverUrl: string): Record<string, unknown> {
               in: 'query',
               required: false,
               description:
-                '强制指定目标客户端，优先级高于 UA 自动检测。别名：`mihomo`、`clash.meta`、`shadowrocket`、`quantumult` 等见 docs/api.md。',
+                '强制指定目标客户端，优先级高于 User-Agent 自动检测。别名：`mihomo`、`clash.meta`、`shadowrocket`、`quantumult` 等见 docs/api.md。',
               schema: {
                 type: 'string',
                 enum: ['clash', 'surge', 'surfboard', 'loon', 'quanx'],
               },
-            },
-            {
-              name: 'ua',
-              in: 'query',
-              required: false,
-              description: 'target 的别名，作用相同',
-              schema: { type: 'string' },
             },
           ],
           responses: {
