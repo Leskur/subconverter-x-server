@@ -36,35 +36,16 @@ async function loadClashTemplate(): Promise<ClashTemplateExtras> {
 
 export type ConvertOptions = IngestOptions
 
-/** 浏览器 UA 拉订阅常得到空/网页；未指定 ua 参数时改用此值 */
-const BROWSER_FETCH_UA = 'clash-verge/v2.5.1'
-
-function isBrowserUserAgent(userAgent: string | undefined): boolean {
-  return !!userAgent && /mozilla\//i.test(userAgent)
-}
-
-/** 拉取订阅时的 UA：显式参数 ua > 浏览器伪装 > 入站 UA */
-export function resolveFetchUserAgent(
-  fetchUserAgent: string | undefined,
-  incomingUserAgent: string | undefined,
-): string | undefined {
-  if (fetchUserAgent) return fetchUserAgent
-  if (isBrowserUserAgent(incomingUserAgent)) return BROWSER_FETCH_UA
-  return undefined
-}
-
 export async function convertSubscription(
   input: ConvertInput,
   options: ConvertOptions = {},
 ): Promise<ConvertResult> {
-  const incomingUserAgent = input.incomingHeaders?.get('user-agent') ?? undefined
   const client = input.outputClient
-  const fetchUserAgent = resolveFetchUserAgent(input.fetchUserAgent, incomingUserAgent)
 
   const body = await ingestSubscription(input.subscriptionUrl, {
     ...options,
     incomingHeaders: input.incomingHeaders,
-    fetchUserAgent,
+    fetchUserAgent: input.fetchUserAgent,
   })
   const { format, nodes, proxyGroups, rules, topLevel } = parseSubscription(body)
 

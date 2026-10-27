@@ -34,7 +34,7 @@
 
 | Header | 说明 |
 |---|---|
-| `User-Agent` | ① 未传 `target` 时用于自动检测输出客户端；② 未传 `ua` 时转发拉取订阅链接（浏览器 UA 会先覆盖为 `clash-verge/v2.5.1`） |
+| `User-Agent` | ① 未传 `target` 时用于自动检测输出客户端；② 未传 `ua` 时原样转发拉取订阅链接 |
 
 **`target` 可选值**
 

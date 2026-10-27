@@ -15,12 +15,14 @@ const CLIENT_ALIASES: Record<string, ClientType> = {
   'quantumult x': 'quanx',
 }
 
+/** 解析 target 等短别名（如 mihomo → clash） */
 function parseClientAlias(value: string | undefined): ClientType | null {
   if (!value) return null
   const key = value.trim().toLowerCase()
   return CLIENT_ALIASES[key] ?? null
 }
 
+/** 从入站 User-Agent 检测输出格式 */
 function detectClientFromUa(userAgent: string | undefined): ClientType | null {
   if (!userAgent) return null
   const ua = userAgent.toLowerCase()
@@ -48,10 +50,13 @@ function detectClientFromUa(userAgent: string | undefined): ClientType | null {
   return null
 }
 
-/** 解析输出客户端；找不到返回 null（用于透传） */
+/**
+ * 解析输出格式：优先 target，否则按入站 UA 检测。
+ * 都无法匹配时返回 null（路由侧原样返回订阅正文）。
+ */
 export function detectOutputClient(
+  target: string | undefined,
   userAgent: string | undefined,
-  targetOrClient: string | undefined,
 ): ClientType | null {
-  return parseClientAlias(targetOrClient) ?? detectClientFromUa(userAgent)
+  return parseClientAlias(target) ?? detectClientFromUa(userAgent)
 }

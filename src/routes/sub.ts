@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { convertSubscription, resolveFetchUserAgent } from '../core/convert.js'
+import { convertSubscription } from '../core/convert.js'
 import { ingestSubscription } from '../core/ingest.js'
 import { detectOutputClient } from '../core/client.js'
 import { logSubAccess } from '../utils/sub-log.js'
@@ -11,18 +11,15 @@ app.get('/', async (c) => {
   const userAgent = c.req.header('user-agent') ?? undefined
   const subscriptionUrl = c.req.query('url')
   const target = c.req.query('target') ?? undefined
-  const fetchUserAgent = resolveFetchUserAgent(
-    c.req.query('ua')?.trim() || undefined,
-    userAgent,
-  )
+  const fetchUserAgent = c.req.query('ua')?.trim() || undefined
 
   if (!subscriptionUrl) {
     logSubAccess(c, started, 400, { error: 'missing url' })
     return c.json({ error: 'Missing required query parameter: url' }, 400)
   }
 
-  // 输出客户端：优先 target，否则从 User-Agent 识别；认不出则透传
-  const outputClient = detectOutputClient(userAgent, target)
+  // 只决定「输出哪种格式」：有 target 用 target，否则按入站 UA 检测；都匹配不到就原样返回订阅正文
+  const outputClient = detectOutputClient(target, userAgent)
   const incomingHeaders = new Headers(c.req.raw.headers)
 
   if (!outputClient) {

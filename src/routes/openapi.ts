@@ -50,7 +50,7 @@ export function getOpenApiSpec(serverUrl: string): Record<string, unknown> {
               in: 'query',
               required: false,
               description:
-                '拉取订阅链接时使用的 User-Agent，优先级高于入站 User-Agent。未传且入站为浏览器 UA 时，默认使用 clash-verge/v2.5.1。',
+                '拉取订阅链接时使用的 User-Agent，优先级高于入站 User-Agent。未传则原样转发客户端入站 UA。',
               schema: { type: 'string' },
             },
           ],
