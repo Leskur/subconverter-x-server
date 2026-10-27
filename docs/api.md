@@ -28,12 +28,13 @@
 |---|---|---|---|
 | `url` | string | 是 | 订阅链接 |
 | `target` | string | 否 | 强制指定**输出客户端**（决定返回 Clash/Surge/… 哪种格式），优先级高于 User-Agent 自动检测 |
+| `ua` | string | 否 | 拉取订阅链接时使用的 User-Agent（覆盖入站 UA；部分机场按 UA 返回不同内容） |
 
 **请求头**
 
 | Header | 说明 |
 |---|---|
-| `User-Agent` | ① 未传 `target` 时用于自动检测输出客户端；② 转发拉取订阅链接时带给对方（浏览器 UA 会先覆盖为 `clash-verge/v2.5.1`） |
+| `User-Agent` | ① 未传 `target` 时用于自动检测输出客户端；② 未传 `ua` 时转发拉取订阅链接（浏览器 UA 会先覆盖为 `clash-verge/v2.5.1`） |
 
 **`target` 可选值**
 
@@ -65,6 +66,9 @@ curl "http://localhost:15500/sub?url=https://example.com/sub&target=clash"
 
 # 强制指定目标为 surfboard
 curl "http://localhost:15500/sub?url=https://example.com/sub&target=surfboard"
+
+# 自定义拉取订阅时的 User-Agent
+curl "http://localhost:15500/sub?url=https://example.com/sub&target=clash&ua=clash-verge/v2.5.1"
 ```
 
 **行为说明**

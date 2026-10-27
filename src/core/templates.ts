@@ -1,5 +1,5 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
-import { dirname, join } from 'node:path'
+import { readFile } from 'node:fs/promises'
+import { join } from 'node:path'
 import { URL_TEST_INTERVAL_SEC, URL_TEST_URL } from './constants.js'
 import { appDataDir } from '../utils/paths.js'
 
@@ -24,7 +24,6 @@ proxy-groups:
 export interface TemplateStore {
   get(): Promise<string>
   getDefault(): string
-  save(content: string): Promise<void>
 }
 
 export class FileTemplateStore implements TemplateStore {
@@ -40,12 +39,6 @@ export class FileTemplateStore implements TemplateStore {
       if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
       return this.getDefault()
     }
-  }
-
-  async save(content: string): Promise<void> {
-    const path = templateFilePath()
-    await mkdir(dirname(path), { recursive: true })
-    await writeFile(path, content, 'utf8')
   }
 }
 

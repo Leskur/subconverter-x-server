@@ -45,4 +45,23 @@ describe('GET /sub', () => {
     assert.match(body, /^proxies:/m)
     assert.match(body, /name: SS-Node/)
   })
+
+  it('uses query ua when fetching subscription', async () => {
+    let upstreamUa = ''
+    globalThis.fetch = async (_input, init) => {
+      const headers = new Headers(init?.headers)
+      upstreamUa = headers.get('user-agent') ?? ''
+      return new Response('ss://aes-128-gcm:password@example.com:8388#SS-Node', { status: 200 })
+    }
+
+    const res = await app.fetch(
+      new Request(
+        'http://localhost/sub?url=http%3A%2F%2Fsource.local%2Fsub&target=clash&ua=clash-verge%2Fv2.5.1',
+        { headers: { 'user-agent': 'Surfboard/2.4' } },
+      ),
+    )
+
+    assert.equal(res.status, 200)
+    assert.equal(upstreamUa, 'clash-verge/v2.5.1')
+  })
 })

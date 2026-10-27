@@ -4,6 +4,7 @@ import { logAccess } from './log.js'
 export function logSubAccess(c: Context, started: number, status: number, extra: Record<string, unknown> = {}): void {
   const rawUrl = c.req.query('url')
   const target = c.req.query('target')
+  const ua = c.req.query('ua')?.trim()
   logAccess({
     method: c.req.method,
     path: '/sub',
@@ -11,6 +12,7 @@ export function logSubAccess(c: Context, started: number, status: number, extra:
     latency: `${Date.now() - started}ms`,
     ...(rawUrl ? { url: rawUrl } : {}),
     ...(target ? { target } : {}),
+    ...(ua ? { ua } : {}),
     ...extra,
   })
 }

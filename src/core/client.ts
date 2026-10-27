@@ -15,15 +15,13 @@ const CLIENT_ALIASES: Record<string, ClientType> = {
   'quantumult x': 'quanx',
 }
 
-/** 解析 target 等别名（clash.meta → clash） */
-export function parseClientAlias(value: string | undefined): ClientType | null {
+function parseClientAlias(value: string | undefined): ClientType | null {
   if (!value) return null
   const key = value.trim().toLowerCase()
   return CLIENT_ALIASES[key] ?? null
 }
 
-/** 从 User-Agent 猜测输出客户端 */
-export function detectClientFromUa(userAgent: string | undefined): ClientType | null {
+function detectClientFromUa(userAgent: string | undefined): ClientType | null {
   if (!userAgent) return null
   const ua = userAgent.toLowerCase()
 
@@ -48,15 +46,6 @@ export function detectClientFromUa(userAgent: string | undefined): ClientType | 
   }
 
   return null
-}
-
-/** 解析输出客户端；找不到时用 fallback */
-export function resolveOutputClient(
-  userAgent: string | undefined,
-  targetOrClient: string | undefined,
-  fallback: ClientType = 'clash',
-): ClientType {
-  return parseClientAlias(targetOrClient) ?? detectClientFromUa(userAgent) ?? fallback
 }
 
 /** 解析输出客户端；找不到返回 null（用于透传） */

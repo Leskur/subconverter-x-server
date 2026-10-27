@@ -5,21 +5,15 @@ import { rulesStore } from '../rules/store.js'
 const app = new Hono()
 
 app.get('/default', async (c) => {
-  const rules = await rulesStore.getDefault()
-  if (!rules) return c.json({ error: 'Default rules not found' }, 404)
-  return c.json(rules)
+  return c.json(await rulesStore.getDefault())
 })
 
 app.post('/reset', async (c) => {
-  const rules = await rulesStore.reset()
-  if (!rules) return c.json({ error: 'Default rules not found' }, 404)
-  return c.json(rules)
+  return c.json(await rulesStore.reset())
 })
 
 app.get('/', async (c) => {
-  const rules = await rulesStore.get()
-  if (!rules) return c.json({ error: 'Rules not found' }, 404)
-  return c.json(rules)
+  return c.json(await rulesStore.get())
 })
 
 app.put('/', async (c) => {

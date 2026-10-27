@@ -3,7 +3,6 @@ import type { ConvertInput, ConvertResult } from './types.js'
 import { formatProxies, type FormatExtras } from './format.js'
 import { ingestSubscription, type IngestOptions } from './ingest.js'
 import { parseSubscription } from './parse.js'
-import { resolveOutputClient } from './client.js'
 import { resolveClashExtras } from '../rules/merge.js'
 import { expandRulesetRefs } from '../rules/ruleset.js'
 import { rulesStore } from '../rules/store.js'
@@ -35,113 +34,73 @@ async function loadClashTemplate(): Promise<ClashTemplateExtras> {
   }
 }
 
-export interface ConvertOptions extends IngestOptions {
-  defaultClient?: ConvertInput['outputClient']
-}
+export type ConvertOptions = IngestOptions
 
-/** 按输出客户端预设的拉取 UA（部分订阅按 UA 返回不同内容） */
-const FETCH_UA_BY_CLIENT: Record<string, string> = {
-  clash: 'ClashforWindows/0.20.39',
-  surge: 'Surge/2024',
-  surfboard: 'Surfboard/2.4',
-  loon: 'Loon/3.2',
-  quanx: 'Quantumult%20X/1.0.30',
-}
-
+/** 浏览器 UA 拉订阅常得到空/网页；未指定 ua 参数时改用此值 */
 const BROWSER_FETCH_UA = 'clash-verge/v2.5.1'
 
 function isBrowserUserAgent(userAgent: string | undefined): boolean {
   return !!userAgent && /mozilla\//i.test(userAgent)
 }
 
-/** 仅透传：拉取订阅链接原文，不改 UA、不解析、不转换 */
-export async function fetchRawSubscription(
-  input: Pick<ConvertInput, 'subscriptionUrl' | 'incomingHeaders'>,
-  options: ConvertOptions = {},
-): Promise<string> {
-  return ingestSubscription(input.subscriptionUrl, {
-    ...options,
-    incomingHeaders: input.incomingHeaders,
-  })
+/** 拉取订阅时的 UA：显式参数 ua > 浏览器伪装 > 入站 UA */
+export function resolveFetchUserAgent(
+  fetchUserAgent: string | undefined,
+  incomingUserAgent: string | undefined,
+): string | undefined {
+  if (fetchUserAgent) return fetchUserAgent
+  if (isBrowserUserAgent(incomingUserAgent)) return BROWSER_FETCH_UA
+  return undefined
 }
 
 export async function convertSubscription(
   input: ConvertInput,
   options: ConvertOptions = {},
 ): Promise<ConvertResult> {
-  const userAgent = input.incomingHeaders?.get('user-agent') ?? undefined
+  const incomingUserAgent = input.incomingHeaders?.get('user-agent') ?? undefined
+  const client = input.outputClient
+  const fetchUserAgent = resolveFetchUserAgent(input.fetchUserAgent, incomingUserAgent)
 
-  // 浏览器 UA 拉订阅常得到空/网页；先换成通用客户端 UA
-  const browserFetchUa = isBrowserUserAgent(userAgent) ? BROWSER_FETCH_UA : undefined
   const body = await ingestSubscription(input.subscriptionUrl, {
     ...options,
     incomingHeaders: input.incomingHeaders,
-    fetchUserAgent: browserFetchUa,
+    fetchUserAgent,
   })
-  let { format, nodes, proxyGroups, rules, topLevel } = parseSubscription(body)
-
-  // 0 节点时：用输出客户端的预设 UA 再拉一次（与第一次实际使用的 UA 相同时跳过）
-  const usedFetchUa = browserFetchUa ?? userAgent
-  const clientFetchUa = input.outputClient ? FETCH_UA_BY_CLIENT[input.outputClient] : undefined
-  const retryFetchUa =
-    nodes.length === 0 &&
-    clientFetchUa &&
-    clientFetchUa.toLowerCase() !== usedFetchUa?.toLowerCase()
-      ? clientFetchUa
-      : null
-
-  if (retryFetchUa) {
-    const retryBody = await ingestSubscription(input.subscriptionUrl, {
-      ...options,
-      incomingHeaders: input.incomingHeaders,
-      fetchUserAgent: retryFetchUa,
-    })
-    const retry = parseSubscription(retryBody)
-
-    if (retry.nodes.length > 0) {
-      format = retry.format
-      nodes = retry.nodes
-      proxyGroups = retry.proxyGroups
-      rules = retry.rules
-      topLevel = retry.topLevel
-    }
-  }
+  const { format, nodes, proxyGroups, rules, topLevel } = parseSubscription(body)
 
   if (nodes.length === 0) {
     throw new Error('No supported proxy nodes found in subscription')
   }
 
-  const client = resolveOutputClient(userAgent, input.outputClient, options.defaultClient ?? 'clash')
-
-  const extras: FormatExtras = {}
-  let proxyGroupsSource: 'subscription' | 'template' | undefined
   const rulesConfig = await rulesStore.get()
-  if (rulesConfig?.rules) {
-    rulesConfig.rules = await expandRulesetRefs(rulesConfig.rules)
-  }
+  const expandedRules = await expandRulesetRefs(rulesConfig.rules)
+  const rulesForMerge = { ...rulesConfig, rules: expandedRules }
+
   let resolvedTopLevel = topLevel
   let resolvedProxyGroups = proxyGroups
-  if (!resolvedTopLevel || Object.keys(resolvedTopLevel).length === 0) {
+  // Clash 模板仅补 Clash 输出所需的 topLevel / proxy-groups
+  if (
+    client === 'clash' &&
+    (!resolvedTopLevel || Object.keys(resolvedTopLevel).length === 0)
+  ) {
     const tmpl = await loadClashTemplate()
     resolvedTopLevel = tmpl.topLevel
     if (!resolvedProxyGroups || resolvedProxyGroups.length === 0) {
       resolvedProxyGroups = tmpl.proxyGroups
-      proxyGroupsSource = 'template'
-    } else {
-      proxyGroupsSource = 'subscription'
     }
-  } else {
-    proxyGroupsSource = 'subscription'
   }
-  extras.clashExtras = resolveClashExtras(rulesConfig, { proxyGroups: resolvedProxyGroups, rules, topLevel: resolvedTopLevel })
-  extras.outputSettings = await outputSettingsStore.get()
+
+  const extras: FormatExtras = {
+    clashExtras: resolveClashExtras(rulesForMerge, {
+      proxyGroups: resolvedProxyGroups,
+      rules,
+      topLevel: resolvedTopLevel,
+    }),
+    outputSettings: await outputSettingsStore.get(),
+  }
 
   const subConfig = await subscriptionStore.get()
-  const updateInterval = subConfig.updateInterval
-
-  const formatted = formatProxies(nodes, client, extras, input.managedConfigUrl, updateInterval)
-  const proxyGroupCount = extras.clashExtras?.proxyGroups?.length
-  const ruleCount = extras.clashExtras?.rules?.length
+  const formatted = formatProxies(nodes, client, extras, input.managedConfigUrl, subConfig.updateInterval)
 
   return {
     body: formatted.body,
@@ -150,8 +109,7 @@ export async function convertSubscription(
     nodeCount: nodes.length,
     emittedCount: formatted.emittedCount,
     format,
-    proxyGroupsSource,
-    proxyGroupCount,
-    ruleCount,
+    proxyGroupCount: extras.clashExtras?.proxyGroups?.length,
+    ruleCount: extras.clashExtras?.rules?.length,
   }
 }

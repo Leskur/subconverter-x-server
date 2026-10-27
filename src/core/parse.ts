@@ -15,7 +15,7 @@ const PARSERS: Array<(line: string) => ProxyNode | null> = [
   parseHysteria2Line,
 ]
 
-export function parseProxyLine(line: string): ProxyNode | null {
+function parseProxyLine(line: string): ProxyNode | null {
   const trimmed = line.trim()
   if (!trimmed) return null
 
@@ -27,7 +27,7 @@ export function parseProxyLine(line: string): ProxyNode | null {
   return null
 }
 
-export function parseProxyLines(lines: string[]): ProxyNode[] {
+function parseProxyLines(lines: string[]): ProxyNode[] {
   const nodes: ProxyNode[] = []
 
   for (const line of lines) {

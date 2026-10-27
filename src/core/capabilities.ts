@@ -14,7 +14,7 @@ const STANDARD: readonly ProxyType[] = [
  * 新增支持时只改这里，并补齐对应 formatter 的输出实现。
  * `raw` 仅 Clash 保留未知类型透传。
  */
-export const CLIENT_CAPABILITIES: Record<ClientType, readonly ProxyType[]> = {
+const CLIENT_CAPABILITIES: Record<ClientType, readonly ProxyType[]> = {
   clash: [...STANDARD, 'raw'],
   // Surge / Shadowrocket：官方不支持 VLESS；输出为 Surge INI
   surge: ['shadowsocks', 'trojan', 'vmess', 'hysteria2'],
@@ -22,10 +22,6 @@ export const CLIENT_CAPABILITIES: Record<ClientType, readonly ProxyType[]> = {
   surfboard: ['shadowsocks', 'trojan', 'vmess', 'hysteria2'],
   loon: [...STANDARD],
   quanx: [...STANDARD],
-}
-
-export function isProxySupported(client: ClientType, type: ProxyType): boolean {
-  return CLIENT_CAPABILITIES[client].includes(type)
 }
 
 export function filterNodesForClient(client: ClientType, nodes: ProxyNode[]): ProxyNode[] {

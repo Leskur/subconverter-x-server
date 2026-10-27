@@ -1,5 +1,6 @@
 import { Hono } from 'hono'
-import { convertSubscription, fetchRawSubscription } from '../core/convert.js'
+import { convertSubscription, resolveFetchUserAgent } from '../core/convert.js'
+import { ingestSubscription } from '../core/ingest.js'
 import { detectOutputClient } from '../core/client.js'
 import { logSubAccess } from '../utils/sub-log.js'
 
@@ -10,6 +11,10 @@ app.get('/', async (c) => {
   const userAgent = c.req.header('user-agent') ?? undefined
   const subscriptionUrl = c.req.query('url')
   const target = c.req.query('target') ?? undefined
+  const fetchUserAgent = resolveFetchUserAgent(
+    c.req.query('ua')?.trim() || undefined,
+    userAgent,
+  )
 
   if (!subscriptionUrl) {
     logSubAccess(c, started, 400, { error: 'missing url' })
@@ -18,12 +23,13 @@ app.get('/', async (c) => {
 
   // 输出客户端：优先 target，否则从 User-Agent 识别；认不出则透传
   const outputClient = detectOutputClient(userAgent, target)
+  const incomingHeaders = new Headers(c.req.raw.headers)
 
   if (!outputClient) {
     try {
-      const raw = await fetchRawSubscription({
-        subscriptionUrl,
-        incomingHeaders: new Headers(c.req.raw.headers),
+      const raw = await ingestSubscription(subscriptionUrl, {
+        incomingHeaders,
+        fetchUserAgent,
       })
       logSubAccess(c, started, 200, { mode: 'passthrough', bytes: raw.length })
       return c.text(raw, 200, { 'Content-Type': 'text/plain; charset=utf-8' })
@@ -37,8 +43,9 @@ app.get('/', async (c) => {
   try {
     const result = await convertSubscription({
       subscriptionUrl,
-      incomingHeaders: new Headers(c.req.raw.headers),
+      incomingHeaders,
       outputClient,
+      fetchUserAgent,
       managedConfigUrl: c.req.url,
     })
     logSubAccess(c, started, 200, {

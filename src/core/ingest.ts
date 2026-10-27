@@ -2,7 +2,6 @@ import { assertSafeSubscriptionUrl } from '../utils/uri.js'
 import { buildFetchHeaders } from '../utils/headers.js'
 
 export interface IngestOptions {
-  fetchImpl?: typeof fetch
   timeoutMs?: number
   /** 客户端 → 本服务 的入站头，转发时会过滤 hop-by-hop */
   incomingHeaders?: Headers
@@ -10,13 +9,12 @@ export interface IngestOptions {
   fetchUserAgent?: string
 }
 
-/** 实际 HTTP GET 订阅链接正文 */
-async function fetchSubscription(
+/** 拉取订阅链接正文（可覆盖拉取时的 UA） */
+export async function ingestSubscription(
   rawUrl: string,
   options: IngestOptions = {},
 ): Promise<string> {
   const url = assertSafeSubscriptionUrl(rawUrl)
-  const fetchImpl = options.fetchImpl ?? fetch
   const timeoutMs = options.timeoutMs ?? 15_000
   const headers = buildFetchHeaders(options.incomingHeaders, options.fetchUserAgent)
 
@@ -24,7 +22,7 @@ async function fetchSubscription(
   const timer = setTimeout(() => controller.abort(), timeoutMs)
 
   try {
-    const response = await fetchImpl(url, {
+    const response = await fetch(url, {
       signal: controller.signal,
       headers,
     })
@@ -37,12 +35,4 @@ async function fetchSubscription(
   } finally {
     clearTimeout(timer)
   }
-}
-
-/** 拉取订阅链接正文（可覆盖拉取时的 UA） */
-export async function ingestSubscription(
-  rawUrl: string,
-  options: IngestOptions = {},
-): Promise<string> {
-  return fetchSubscription(rawUrl, options)
 }

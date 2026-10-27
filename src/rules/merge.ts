@@ -6,7 +6,7 @@ export interface ClashExtras {
   topLevel?: Record<string, unknown>
 }
 
-export function normalizeMergedRules(rules: string[]): string[] {
+function normalizeMergedRules(rules: string[]): string[] {
   const seen = new Set<string>()
   const regular: string[] = []
   const match: string[] = []
@@ -26,7 +26,7 @@ export function normalizeMergedRules(rules: string[]): string[] {
   return [...regular, ...match]
 }
 
-export function mergeRules(
+function mergeRules(
   custom: string[],
   subscription: string[] | undefined,
   mode: RulesMergeMode,

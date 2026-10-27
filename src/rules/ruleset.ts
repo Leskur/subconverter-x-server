@@ -10,11 +10,7 @@ interface CacheEntry {
 
 const cache = new Map<string, CacheEntry>()
 
-export function isRulesetRef(rule: string): boolean {
-  return rule.trimStart().startsWith(RULESET_PREFIX)
-}
-
-export function parseRulesetRef(rule: string): { url: string; policy: string } | null {
+function parseRulesetRef(rule: string): { url: string; policy: string } | null {
   const trimmed = rule.trim()
   if (!trimmed.startsWith(RULESET_PREFIX)) return null
   const rest = trimmed.slice(RULESET_PREFIX.length)

@@ -41,28 +41,22 @@ export class FileRulesStore {
     private readonly userPath = userRulesPath(),
   ) {}
 
-  async get(): Promise<RulesConfig | null> {
-    // 1. Try user-saved rules
+  async get(): Promise<RulesConfig> {
     try {
       const content = await readFile(this.userPath, 'utf8')
       return normalizeRules(parse(content))
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
     }
-
-    // 2. Fall back to built-in defaults
     return defaultRules()
   }
 
-  async getDefault(): Promise<RulesConfig | null> {
+  async getDefault(): Promise<RulesConfig> {
     return defaultRules()
   }
 
   async save(input: RulesInput): Promise<RulesConfig> {
-    const existing = (await this.get()) ?? {
-      rules: [],
-      rulesMerge: 'prepend' as const,
-    }
+    const existing = await this.get()
     const config: RulesConfig = {
       rules: input.rules ?? existing.rules,
       rulesMerge: input.rulesMerge ?? existing.rulesMerge,
@@ -77,7 +71,7 @@ export class FileRulesStore {
     return config
   }
 
-  async reset(): Promise<RulesConfig | null> {
+  async reset(): Promise<RulesConfig> {
     try {
       await unlink(this.userPath)
     } catch (error) {

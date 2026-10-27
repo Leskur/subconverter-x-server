@@ -40,10 +40,14 @@ curl "http://localhost:15500/sub?url=https://example.com/sub"
 # 强制指定目标客户端
 curl "http://localhost:15500/sub?url=https://example.com/sub&target=clash"
 curl "http://localhost:15500/sub?url=https://example.com/sub&target=surge"
+
+# 自定义拉取订阅时的 User-Agent
+curl "http://localhost:15500/sub?url=https://example.com/sub&target=clash&ua=clash-verge/v2.5.1"
 ```
 
 `target` 可选值：`clash` · `surge` · `surfboard` · `loon` · `quanx`。  
-不传时按 `User-Agent` 自动识别；无法识别时原样透传订阅链接内容。
+不传时按 `User-Agent` 自动识别；无法识别时原样透传订阅链接内容。  
+`ua` 可选：指定拉取订阅链接时的 User-Agent。
 
 ## 文档
 

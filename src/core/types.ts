@@ -86,8 +86,10 @@ export interface ConvertInput {
   subscriptionUrl: string
   /** 客户端 → 本服务 的入站请求头（识别 UA + 转发拉取订阅） */
   incomingHeaders?: Headers
-  /** 最终输出格式对应的客户端 */
-  outputClient?: ClientType
+  /** 最终输出格式对应的客户端（由路由解析后传入） */
+  outputClient: ClientType
+  /** 拉取订阅链接时使用的 User-Agent（来自查询参数 ua，优先于入站 UA） */
+  fetchUserAgent?: string
   /** 写入 #!MANAGED-CONFIG 的自身订阅 URL（转换后的订阅链接） */
   managedConfigUrl?: string
 }
@@ -101,7 +103,6 @@ export interface ConvertResult {
   /** 按客户端能力过滤后实际输出的节点数 */
   emittedCount: number
   format?: string
-  proxyGroupsSource?: 'subscription' | 'template'
   proxyGroupCount?: number
   ruleCount?: number
 }
