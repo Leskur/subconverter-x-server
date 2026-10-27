@@ -2,17 +2,22 @@
 set -e
 
 SERVICE="subconverter-x"
-BIN="$HOME/.local/bin/subconverter-x"
-UNIT="$HOME/.config/systemd/user/$SERVICE.service"
-CONFIG_DIR="$HOME/.config/$SERVICE"
+BIN="/usr/local/bin/subconverter-x"
+UNIT="/etc/systemd/system/$SERVICE.service"
+CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/$SERVICE"
+
+if [ "$(id -u)" -ne 0 ]; then
+  echo "❌ 请使用 root 卸载：curl -fsSL .../uninstall.sh | sudo bash"
+  exit 1
+fi
 
 # 停止服务
-systemctl --user stop "$SERVICE" 2>/dev/null || true
-systemctl --user disable "$SERVICE" 2>/dev/null || true
+systemctl stop "$SERVICE" 2>/dev/null || true
+systemctl disable "$SERVICE" 2>/dev/null || true
 
 # 删除二进制与 systemd unit
 rm -f "$BIN" "$UNIT"
-systemctl --user daemon-reload
+systemctl daemon-reload
 
 if [ -d "$CONFIG_DIR" ]; then
   echo "检测到配置目录：$CONFIG_DIR"

@@ -3,8 +3,13 @@ set -e
 
 REPO="Leskur/subconverter-x-server"
 SERVICE="subconverter-x"
-BIN="$HOME/.local/bin/subconverter-x"
-UNIT="$HOME/.config/systemd/user/$SERVICE.service"
+BIN="/usr/local/bin/subconverter-x"
+UNIT="/etc/systemd/system/$SERVICE.service"
+
+if [ "$(id -u)" -ne 0 ]; then
+  echo "❌ 请使用 root 安装：curl -fsSL .../install.sh | sudo bash"
+  exit 1
+fi
 
 ARCH=$(uname -m)
 case "$ARCH" in
@@ -26,15 +31,14 @@ echo "⬇️  下载 $TAG ($ARCH)"
 echo "   $URL"
 
 # 停止旧服务
-systemctl --user stop "$SERVICE" 2>/dev/null || true
+systemctl stop "$SERVICE" 2>/dev/null || true
 
 # 下载二进制文件
 mkdir -p "$(dirname "$BIN")"
 curl -fsSL "$URL" -o "$BIN"
 chmod +x "$BIN"
 
-# 注册服务
-mkdir -p "$(dirname "$UNIT")"
+# 注册系统服务
 cat > "$UNIT" << EOF
 [Unit]
 Description=subconverter-x
@@ -47,29 +51,15 @@ Restart=always
 RestartSec=3
 
 [Install]
-WantedBy=default.target
+WantedBy=multi-user.target
 EOF
 
-# 允许用户级 systemd 在开机启动，并在登出后继续运行
-if command -v loginctl >/dev/null 2>&1; then
-  if loginctl show-user "$USER" -p Linger 2>/dev/null | grep -qx 'Linger=yes'; then
-    echo "🔁 已开启 linger，服务可开机自启"
-  elif loginctl enable-linger "$USER" 2>/dev/null; then
-    echo "🔁 已开启 linger，服务可开机自启并在登出后继续运行"
-  else
-    echo "⚠️  无法自动开启 linger。请手动执行："
-    echo "    sudo loginctl enable-linger $USER"
-    echo "   否则登出或重启后服务可能不会保持运行"
-  fi
-else
-  echo "⚠️  未找到 loginctl，开机自启可能不可用"
-fi
-
 # 启动
-systemctl --user daemon-reload
-systemctl --user enable "$SERVICE"
-systemctl --user restart "$SERVICE"
+systemctl daemon-reload
+systemctl enable "$SERVICE"
+systemctl restart "$SERVICE"
 
 echo "✅ Done: http://0.0.0.0:${PORT:-15500}"
 echo "🔑 查看认证 Token: cat ~/.config/subconverter-x/config.yaml"
-echo "📋 服务状态: systemctl --user status $SERVICE"
+echo "📋 服务状态: systemctl status $SERVICE"
+echo "📜 查看日志: journalctl -u $SERVICE -f"
